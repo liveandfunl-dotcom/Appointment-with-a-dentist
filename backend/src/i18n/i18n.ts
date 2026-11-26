@@ -1,10 +1,11 @@
+import type { Lang } from '@clinic/shared';
 import el from './el.json';
 import en from './en.json';
 import ru from './ru.json';
 
 /** Языки интерфейса и писем (api.md, раздел 1). */
-export const LANGS = ['ru', 'en', 'el'] as const;
-export type Lang = (typeof LANGS)[number];
+export const LANGS = ['ru', 'en', 'el'] as const satisfies readonly Lang[];
+export type { Lang };
 export const DEFAULT_LANG: Lang = 'ru';
 
 const DICTS: Record<Lang, unknown> = { ru, en, el };

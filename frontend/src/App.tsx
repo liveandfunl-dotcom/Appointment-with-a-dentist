@@ -1,28 +1,17 @@
-import { useEffect, useState } from 'react';
 import { BrowserRouter } from 'react-router';
-import type { i18n as I18n } from 'i18next';
 
 import { AppProviders } from './AppProviders';
 import { AppRoutes } from './AppRoutes';
+import { useAsync } from './hooks/useAsync';
 import { createI18n } from './i18n/index';
 
 export function App() {
-  const [i18n, setI18n] = useState<I18n | null>(null);
+  const i18n = useAsync(() => createI18n(), []);
 
-  useEffect(() => {
-    let cancelled = false;
-    createI18n().then((instance) => {
-      if (!cancelled) setI18n(instance);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  if (!i18n) return null;
+  if (!i18n.data) return null;
   return (
     <BrowserRouter>
-      <AppProviders i18n={i18n}>
+      <AppProviders i18n={i18n.data}>
         <AppRoutes />
       </AppProviders>
     </BrowserRouter>

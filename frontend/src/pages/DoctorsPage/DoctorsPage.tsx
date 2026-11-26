@@ -1,34 +1,24 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 
-import { api } from '../../api/client';
+import type { UserCard } from '../../api/types';
+import { listUsers } from '../../api/users';
 import { useAuth } from '../../auth/AuthContext';
+import { canManageUsers } from '../../auth/roles';
+import { Message } from '../../components/Message/Message';
+import { useAsync } from '../../hooks/useAsync';
+import { fullName } from '../../utils/person';
 import './doctors.css';
 import './doctor-list.css';
 import './doctor-card.css';
-
-interface UserCard {
-  id: number;
-  surname: string;
-  name: string;
-  role: 'doctor' | 'admin';
-  specialization: string | null;
-  phone: string;
-  email: string;
-  room: number | null;
-  workDays: number[];
-  workStart: string | null;
-  workEnd: string | null;
-  isActive: boolean;
-}
 
 function matches(card: UserCard, query: string): boolean {
   if (!query) return true;
   const haystacks = [
     card.surname,
     card.name,
-    `${card.surname} ${card.name}`,
+    fullName(card),
     `${card.name} ${card.surname}`,
     card.specialization ?? '',
   ];
@@ -38,34 +28,18 @@ function matches(card: UserCard, query: string): boolean {
 export function DoctorsPage() {
   const { t } = useTranslation();
   const { user, loading } = useAuth();
-  const [cards, setCards] = useState<UserCard[] | null>(null);
-  const [failed, setFailed] = useState(false);
   const [search, setSearch] = useState('');
 
   const userId = user?.id;
   const userRole = user?.role;
-  const canEdit = userRole === 'admin' || userRole === 'root';
+  const canEdit = canManageUsers(userRole);
 
-  useEffect(() => {
-    if (loading) return;
-    let cancelled = false;
-    api
-      .get<UserCard[]>('/api/users')
-      .then((data) => {
-        if (cancelled) return;
-        setFailed(false);
-        setCards(data);
-      })
-      .catch(() => {
-        if (!cancelled) setFailed(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [loading, userId, userRole]);
+  // Состав списка зависит от роли, поэтому читаем после ответа /api/auth/me и перечитываем при смене пользователя.
+  const cards = useAsync(loading ? null : listUsers, [loading, userId, userRole]);
 
   const query = search.trim().toLocaleLowerCase();
-  const visible = cards?.filter((card) => matches(card, query)) ?? [];
+  const visible = cards.data?.filter((card) => matches(card, query)) ?? [];
+  const failed = cards.error !== undefined;
 
   return (
     <div className="doctors">
@@ -82,19 +56,15 @@ export function DoctorsPage() {
           onChange={(e) => setSearch(e.target.value)}
         />
       </div>
-      {failed && (
-        <p className="doctors__error" role="alert">
-          {t('common.genericError')}
-        </p>
-      )}
-      {!failed && cards === null && <p className="doctors__empty">{t('common.loading')}</p>}
-      {cards !== null && visible.length === 0 && <p className="doctors__empty">{t('doctors.notFound')}</p>}
+      {failed && <Message variant="error">{t('common.genericError')}</Message>}
+      {!failed && !cards.data && <Message variant="muted">{t('common.loading')}</Message>}
+      {cards.data && visible.length === 0 && <Message variant="muted">{t('doctors.notFound')}</Message>}
       {visible.length > 0 && (
         <ul className="doctor-list">
           {visible.map((card) => (
             <li className="doctor-list__item" key={card.id}>
               <article className={card.isActive ? 'doctor-card' : 'doctor-card doctor-card--inactive'}>
-                <h2 className="doctor-card__title">{`${card.surname} ${card.name}`}</h2>
+                <h2 className="doctor-card__title">{fullName(card)}</h2>
                 {card.role === 'admin' && <p className="doctor-card__badge">{t('doctors.roleAdmin')}</p>}
                 {!card.isActive && (
                   <p className="doctor-card__badge doctor-card__badge--inactive">{t('doctors.inactive')}</p>

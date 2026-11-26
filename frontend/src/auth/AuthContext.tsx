@@ -10,17 +10,11 @@ import {
 } from 'react';
 import { useNavigate } from 'react-router';
 
-import { api, ApiError } from '../api/client';
+import { getMe, logoutRequest } from '../api/auth';
+import { ApiError } from '../api/client';
+import type { Me } from '../api/types';
 
-export type Role = 'doctor' | 'admin' | 'root';
-
-/** Ответ `GET /api/auth/me`. */
-export interface Me {
-  id: number;
-  surname: string;
-  name: string;
-  role: Role;
-}
+export type { Me, Role } from '../api/types';
 
 interface AuthValue {
   user: Me | null;
@@ -34,7 +28,7 @@ const AuthContext = createContext<AuthValue | null>(null);
 
 async function fetchMe(): Promise<Me | null> {
   try {
-    return await api.get<Me>('/api/auth/me');
+    return await getMe();
   } catch (e) {
     if (e instanceof ApiError) return null;
     throw e;
@@ -46,32 +40,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    let cancelled = false;
-    fetchMe().then(
-      (me) => {
-        if (cancelled) return;
-        setUser(me);
-        setLoading(false);
-      },
-      () => {
-        if (cancelled) return;
-        setUser(null);
-        setLoading(false);
-      },
-    );
-    return () => {
-      cancelled = true;
-    };
+  const refresh = useCallback(async () => {
+    try {
+      setUser(await fetchMe());
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const refresh = useCallback(async () => {
-    setUser(await fetchMe());
-    setLoading(false);
-  }, []);
+  useEffect(() => {
+    refresh().catch(() => undefined);
+  }, [refresh]);
 
   const logout = useCallback(async () => {
-    await api.post('/api/auth/logout');
+    await logoutRequest();
     // Сначала уходим на открытую страницу, иначе Guard отправит гостя на /login.
     // react-router обновляет location внутри transition, поэтому очистку пользователя
     // ставим в тот же transition: оба обновления попадают в один рендер.

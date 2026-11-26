@@ -6,7 +6,8 @@
   "workspaces": [
     "backend",
     "frontend",
-    "tests"
+    "tests",
+    "shared"
   ],
   "engines": {
     "node": ">=24"

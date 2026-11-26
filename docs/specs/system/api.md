@@ -182,7 +182,7 @@
 ```
 
 - 200 `{ "user": AuthUser }` и заголовок
-  `Set-Cookie: session=<token>; Max-Age=2592000; Path=/; HttpOnly; SameSite=Lax`.
+  `Set-Cookie: session=<token>; Max-Age=2592000; Path=/; HttpOnly; SameSite=Lax` (допускается дополнительный `Expires`).
   Ссылка помечается использованной (`usedAt = now`), создаётся сессия на 30 дней.
 - 400 `VALIDATION_ERROR` `fields: ["token"]` — `token` отсутствует или не строка.
 - 401 `LINK_INVALID` — токен неизвестен, уже использован или пользователь деактивирован. Проверка «использован» идёт раньше «просрочен».
@@ -208,7 +208,7 @@ Cookie без `Secure` (внутренняя сеть, HTTP; HTTPS вне MVP).
 Доступ: guest (идемпотентно). Тело не нужно.
 
 - 200 `{ "ok": true }`. Если cookie указывает на сессию, она удаляется из БД. Всегда отдаётся
-  `Set-Cookie: session=; Max-Age=0; Path=/; HttpOnly; SameSite=Lax`.
+  `Set-Cookie: session=; Max-Age=0; Path=/; HttpOnly; SameSite=Lax` (допускается дополнительный `Expires`).
 - Повторный запрос со старой cookie к закрытому маршруту → 401 `UNAUTHORIZED`.
 
 ### 4.6. `GET /api/auth/me` (AC-AUTH-08, 09, 13)
@@ -400,6 +400,7 @@ Root может получить любого пользователя, вклю
 | Маршрут | guest | doctor | admin | root |
 |---|---|---|---|---|
 | `GET health` | ✓ | ✓ | ✓ | ✓ |
+| `GET clinic` | ✓ | ✓ | ✓ | ✓ |
 | `POST auth/magic-link`, `…/verify`, `auth/login`, `auth/logout` | ✓ | ✓ | ✓ | ✓ |
 | `GET auth/me` | 401 | ✓ | ✓ | ✓ |
 | `GET users` | активные врачи | активные врачи | все врачи | врачи + админы |
@@ -410,6 +411,16 @@ Root может получить любого пользователя, вклю
 | `GET appointments` | 401 | свои | все | все |
 | `POST appointments` | 401 | к себе | к любому | к любому |
 | `POST appointments/:id/cancel` | 401 | свои будущие | любые будущие | любые будущие |
+
+### 4.16. `GET /api/clinic` (AC-TZ-01)
+
+Доступ: guest. Ответ 200: часовой пояс клиники (`CLINIC_TZ`, по умолчанию `Europe/Athens`). Frontend берёт отсюда «сегодня» для календарей.
+
+```json
+{ "timezone": "Europe/Athens" }
+```
+
+В теле только `timezone`; другие настройки не отдаются.
 
 ## 5. Письма и переводы бэкенда (AC-AUTH-01, AC-MAIL-01, AC-I18N-02)
 
@@ -446,6 +457,7 @@ export interface CreateAppOptions {
   dbPath: string;                          // путь к файлу SQLite (временный в тестах)
   now?: () => Date;                        // часы; по умолчанию () => new Date()
   mail: 'smtp' | 'memory' | 'failing';
+  smtp?: Partial<SmtpOptions>;             // host, port, secure, user, pass, from; по умолчанию localhost:1025
   seedDev?: boolean;                       // по умолчанию false
   appUrl?: string;                         // по умолчанию 'http://localhost:3000'
   timezone?: string;                       // по умолчанию 'Europe/Athens'
@@ -456,12 +468,12 @@ export function createApp(options: CreateAppOptions): Promise<INestApplication>;
 
 - Возвращённое приложение уже настроено: глобальный префикс `/api`, `cookie-parser`, единый фильтр ошибок (формат 1.1), миграции и сиды выполнены, вызван `app.init()`. Тесты используют `request(app.getHttpServer())` (supertest), `listen()` не нужен.
 - `now` вызывается при каждом обращении к часам — тест может менять возвращаемое значение между запросами (истечение ссылки, сессии, окна rate limit).
-- `createApp` не читает `process.env` для опций выше (кроме `SMTP_*` при `mail: 'smtp'`). `backend/src/main.ts` читает env, вызывает `createApp({ mail: 'smtp', … })` и `app.listen(PORT)`.
+- `createApp` не читает `process.env` для опций выше; значения по умолчанию подставляет `resolveOptions` (`app.options.ts`). `backend/src/main.ts` читает env (в том числе `SMTP_*` → `smtp`), вызывает `createApp({ mail: 'smtp', … })` и `app.listen(PORT)`.
 - `app.close()` закрывает соединение с БД; после этого тест может снова вызвать `createApp` на том же `dbPath` (AC-DB-01, AC-DB-02, AC-DB-04).
 
 ### 6.2. `MailService`
 
-Файл `backend/src/mail/mail.service.ts`, класс `MailService` (получение в тесте: `app.get(MailService)`):
+Файл `backend/src/mail/mail.service.ts`, класс `MailService` (получение в тесте: `app.get(MailService)`). `MailService` делегирует отправку `MailTransport` (`mail/mail-transport.ts`: `SmtpTransport`, `MemoryTransport`, `FailingTransport`); реализацию выбирает фабрика в `AppModule` по `options.mail`:
 
 ```ts
 export interface MailMessage { to: string; subject: string; text: string }

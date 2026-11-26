@@ -5,6 +5,30 @@ import { ApiError } from './api-error';
 export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export const EMAIL_MAX = 254;
 
+/** id в пути: целое ≥ 1, иначе 404 NOT_FOUND (api.md, 1.4). */
+export function parseId(raw: string): number {
+  const id = /^[1-9]\d*$/.test(raw) ? Number(raw) : NaN;
+  if (!Number.isSafeInteger(id)) throw ApiError.notFound();
+  return id;
+}
+
+/** Целое число ≥ 1 (JSON-число). */
+export function isPositiveInt(value: unknown): value is number {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 1;
+}
+
+/** Колонка INTEGER, допускающая NULL → число или null. */
+export function nullableNumber(value: number | bigint | null): number | null {
+  return value === null ? null : Number(value);
+}
+
+/** Строка 1…max символов после trim, иначе null. */
+export function boundedText(value: unknown, max: number): string | null {
+  if (typeof value !== 'string') return null;
+  const s = value.trim();
+  return s.length >= 1 && s.length <= max ? s : null;
+}
+
 /** Тело запроса как объект; не объект (нет тела, массив, примитив) → `{}`. */
 export function bodyOf(body: unknown): Record<string, unknown> {
   return typeof body === 'object' && body !== null && !Array.isArray(body) ? (body as Record<string, unknown>) : {};

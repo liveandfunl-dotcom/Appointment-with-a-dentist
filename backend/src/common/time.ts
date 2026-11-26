@@ -14,3 +14,8 @@ export function formatTime(minutes: number): string {
   const m = minutes % 60;
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
+
+/** Момент времени → unix-секунды (формат хранения в БД). */
+export function toUnixSec(date: Date): number {
+  return Math.floor(date.getTime() / 1000);
+}

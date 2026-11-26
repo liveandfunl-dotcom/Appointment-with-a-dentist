@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NavLink, useNavigate } from 'react-router';
 
-import { useAuth, type Role } from '../../auth/AuthContext';
+import type { Role } from '../../api/types';
+import { useAuth } from '../../auth/AuthContext';
+import { ADMINS, STAFF } from '../../auth/roles';
 import { ConfirmDialog } from '../ConfirmDialog/ConfirmDialog';
 import { LanguageSelect } from '../LanguageSelect/LanguageSelect';
 import './header.css';
@@ -15,13 +17,12 @@ interface MenuItem {
 }
 
 const ANY = [null, 'doctor', 'admin', 'root'] as const;
-const STAFF: Role[] = ['doctor', 'admin', 'root'];
 
 const MENU: MenuItem[] = [
   { key: 'records', to: '/records', visibleTo: STAFF },
   { key: 'booking', to: '/booking', visibleTo: STAFF },
   { key: 'doctors', to: '/doctors', visibleTo: [...ANY] },
-  { key: 'addDoctor', to: '/doctors/new', visibleTo: ['admin', 'root'] },
+  { key: 'addDoctor', to: '/doctors/new', visibleTo: ADMINS },
 ];
 
 export function Header() {

@@ -22,9 +22,9 @@
 |------|------------|
 | `build/Dockerfile`, `build/docker-compose.yml`, `build/.env.example`, `.dockerignore` | образ и стек |
 | `build/smoke.sh` | smoke-тест развёртывания |
-| `backend/src/main.ts` | чтение env (`PORT`, `DB_PATH`, `APP_URL`, `CLINIC_TZ`, `SEED_DEV`, `STATIC_DIR`) |
+| `backend/src/main.ts` | чтение env (`PORT`, `DB_PATH`, `APP_URL`, `CLINIC_TZ`, `SEED_DEV`, `STATIC_DIR`, `SMTP_*`) |
 | `backend/src/app.factory.ts` | статика и SPA-fallback (`staticDir`) |
-| `backend/src/mail/mail.service.ts` | SMTP через env `SMTP_*` |
+| `backend/src/mail/mail-transport.ts` | SMTP-транспорт (настройки приходят из env через `main.ts`) |
 | `docs/guide/deploy.md`, `update.md`, `backup.md`, `dev-setup.md` | руководства |
 
 ## Поведение и решения сверх описания

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { toIso, todayIso } from '../../utils/date';
 import './date-picker.css';
 
 interface DatePickerProps {
@@ -9,25 +10,18 @@ interface DatePickerProps {
   onChange: (date: string) => void;
   /** true — день недоступен. */
   isDateDisabled?: (date: string) => boolean;
+  /** Сегодняшняя дата 'YYYY-MM-DD' (подсветка и начальный месяц); по умолчанию — по часам браузера. */
+  today?: string;
 }
 
-const pad = (n: number) => String(n).padStart(2, '0');
-const toIso = (year: number, month: number, day: number) => `${year}-${pad(month)}-${pad(day)}`;
-
-function todayIso(): string {
-  const now = new Date();
-  return toIso(now.getFullYear(), now.getMonth() + 1, now.getDate());
-}
-
-export function DatePicker({ value, onChange, isDateDisabled }: DatePickerProps) {
+export function DatePicker({ value, onChange, isDateDisabled, today = todayIso() }: DatePickerProps) {
   const { t } = useTranslation();
   const [view, setView] = useState(() => {
-    const [y, m] = (value ?? todayIso()).split('-').map(Number);
+    const [y, m] = (value ?? today).split('-').map(Number);
     return { year: y, month: m };
   });
 
   const { year, month } = view;
-  const today = todayIso();
   const daysInMonth = new Date(year, month, 0).getDate();
   const leading = (new Date(year, month - 1, 1).getDay() + 6) % 7; // неделя с понедельника
   const total = Math.ceil((leading + daysInMonth) / 7) * 7;

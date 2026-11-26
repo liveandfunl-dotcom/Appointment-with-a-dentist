@@ -6,20 +6,15 @@ import type { NextFunction, Request, Response } from 'express';
 import { resolve } from 'node:path';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
-import { CreateAppOptions } from './app.options';
+import { CreateAppOptions, resolveOptions } from './app.options';
 
 export { APP_OPTIONS } from './app.options';
-export type { AppOptions, CreateAppOptions, MailMode } from './app.options';
+export type { CreateAppOptions, MailMode, ResolvedAppOptions } from './app.options';
 
 /** Тестовый хук и точка сборки приложения (docs/specs/system/api.md, раздел 6.1). */
 export async function createApp(options: CreateAppOptions): Promise<INestApplication> {
   const logger: LogLevel[] = process.env.NODE_ENV === 'test' ? ['error'] : ['log', 'error', 'warn'];
-  const resolved: CreateAppOptions = {
-    appUrl: 'http://localhost:3000',
-    timezone: 'Europe/Athens',
-    seedDev: false,
-    ...options,
-  };
+  const resolved = resolveOptions(options);
   const app = await NestFactory.create<NestExpressApplication>(AppModule.forRoot(resolved), { logger });
   app.setGlobalPrefix('api');
   app.use(cookieParser());

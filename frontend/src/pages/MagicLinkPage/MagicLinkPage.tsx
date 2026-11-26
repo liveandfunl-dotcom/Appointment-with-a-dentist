@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 
-import { api, ApiError } from '../../api/client';
+import { verifyMagicLink } from '../../api/auth';
+import { ApiError } from '../../api/client';
 import { useAuth } from '../../auth/AuthContext';
 import './magic-link.css';
 
@@ -23,7 +24,7 @@ export function MagicLinkPage() {
     started.current = true;
     (async () => {
       try {
-        await api.post('/api/auth/magic-link/verify', { token });
+        await verifyMagicLink(token);
         await refresh();
         navigate('/records', { replace: true });
       } catch (e) {

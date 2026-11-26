@@ -7,11 +7,6 @@
   background-color: var(--color-surface);
 }
 
-.login__status {
-  margin: 0 0 var(--space-field);
-  color: var(--color-success);
-}
-
 .login__actions {
   display: flex;
   flex-wrap: wrap;

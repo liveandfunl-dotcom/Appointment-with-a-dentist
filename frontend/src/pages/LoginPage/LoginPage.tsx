@@ -1,145 +1,108 @@
-import { useId, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 
-import { api, ApiError } from '../../api/client';
+import { loginWithPassword, requestMagicLink } from '../../api/auth';
+import { apiErrorKey } from '../../api/errors';
 import { useAuth } from '../../auth/AuthContext';
+import { Message } from '../../components/Message/Message';
+import { TextField } from '../../components/FormField/TextField';
+import { EMAIL_RE } from '../../utils/validation';
 import './login.css';
 
 type Mode = 'email' | 'password';
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_ERRORS = { USER_NOT_FOUND: 'login.userNotFound', MAIL_FAILED: 'login.mailFailed' };
+const PASSWORD_ERRORS = { INVALID_CREDENTIALS: 'login.invalidCredentials' };
 
 export function LoginPage() {
   const { t, i18n } = useTranslation();
   const { refresh } = useAuth();
   const navigate = useNavigate();
-  const ids = useId();
-  const errorId = `${ids}-error`;
 
   const [mode, setMode] = useState<Mode>('email');
   const [email, setEmail] = useState('');
   const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  /** i18n-ключ ошибки: переводится при рендере, поэтому следует за сменой языка. */
+  const [errorKey, setErrorKey] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
   const [pending, setPending] = useState(false);
 
   const canSubmit =
     !pending && (mode === 'email' ? EMAIL_RE.test(email.trim()) : login !== '' && password !== '');
 
-  function change(setter: (value: string) => void) {
-    return (value: string) => {
-      setter(value);
-      setError(null);
-      setSent(false);
-    };
-  }
-
-  function switchMode(next: Mode) {
-    setMode(next);
-    setError(null);
+  function resetStatus() {
+    setErrorKey(null);
     setSent(false);
   }
 
-  function errorText(e: unknown, specific: Record<string, string>): string {
-    if (e instanceof ApiError) {
-      if (specific[e.code]) return specific[e.code];
-      if (e.code === 'TOO_MANY_REQUESTS') return t('common.tooManyRequests');
-    }
-    return t('common.genericError');
+  const onInput = (setter: (value: string) => void) => (e: { target: { value: string } }) => {
+    setter(e.target.value);
+    resetStatus();
+  };
+
+  function switchMode(next: Mode) {
+    setMode(next);
+    resetStatus();
   }
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (!canSubmit) return;
     setPending(true);
-    setError(null);
-    setSent(false);
+    resetStatus();
     try {
       if (mode === 'email') {
-        await api.post('/api/auth/magic-link', { email: email.trim(), lang: i18n.language });
+        await requestMagicLink(email.trim(), i18n.language);
         setSent(true);
       } else {
-        await api.post('/api/auth/login', { login, password });
+        await loginWithPassword(login, password);
         await refresh();
         navigate('/records', { replace: true });
       }
     } catch (e) {
-      setError(
-        mode === 'email'
-          ? errorText(e, { USER_NOT_FOUND: t('login.userNotFound'), MAIL_FAILED: t('login.mailFailed') })
-          : errorText(e, { INVALID_CREDENTIALS: t('login.invalidCredentials') }),
-      );
+      setErrorKey(apiErrorKey(e, mode === 'email' ? EMAIL_ERRORS : PASSWORD_ERRORS));
     } finally {
       setPending(false);
     }
   }
 
-  const invalid = error !== null;
-  const describedBy = invalid ? errorId : undefined;
-  const errorNode = invalid && (
-    <p className="form-field__error" id={errorId} role="alert">
-      {error}
-    </p>
-  );
+  const error = errorKey ? t(errorKey) : null;
 
   return (
     <div className="login">
       <h1>{t('login.title')}</h1>
       <form className="login__form" onSubmit={submit} noValidate>
         {mode === 'email' ? (
-          <div className="form-field">
-            <label className="form-field__label" htmlFor={`${ids}-email`}>
-              {t('login.email')}
-            </label>
-            <input
-              id={`${ids}-email`}
-              type="email"
-              autoComplete="email"
-              value={email}
-              aria-invalid={invalid || undefined}
-              aria-describedby={describedBy}
-              onChange={(e) => change(setEmail)(e.target.value)}
-            />
-            {errorNode}
-          </div>
+          <TextField
+            label={t('login.email')}
+            type="email"
+            autoComplete="email"
+            value={email}
+            error={error}
+            onChange={onInput(setEmail)}
+          />
         ) : (
           <>
-            <div className="form-field">
-              <label className="form-field__label" htmlFor={`${ids}-login`}>
-                {t('login.login')}
-              </label>
-              <input
-                id={`${ids}-login`}
-                type="text"
-                autoComplete="username"
-                value={login}
-                onChange={(e) => change(setLogin)(e.target.value)}
-              />
-            </div>
-            <div className="form-field">
-              <label className="form-field__label" htmlFor={`${ids}-password`}>
-                {t('login.password')}
-              </label>
-              <input
-                id={`${ids}-password`}
-                type="password"
-                autoComplete="current-password"
-                value={password}
-                aria-invalid={invalid || undefined}
-                aria-describedby={describedBy}
-                onChange={(e) => change(setPassword)(e.target.value)}
-              />
-              {errorNode}
-            </div>
+            <TextField
+              label={t('login.login')}
+              type="text"
+              autoComplete="username"
+              value={login}
+              onChange={onInput(setLogin)}
+            />
+            <TextField
+              label={t('login.password')}
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              error={error}
+              onChange={onInput(setPassword)}
+            />
           </>
         )}
-        {sent && (
-          <p className="login__status" role="status">
-            {t('login.linkSent')}
-          </p>
-        )}
+        {sent && <Message variant="success" spaced>{t('login.linkSent')}</Message>}
         <div className="login__actions">
           <button className="button button--primary" type="submit" disabled={!canSubmit}>
             {t('login.submit')}

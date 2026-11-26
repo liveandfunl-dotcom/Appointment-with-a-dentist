@@ -15,12 +15,3 @@
   min-width: 0;
 }
 
-.records__hint {
-  margin: 0;
-  color: var(--color-text-muted);
-}
-
-.records__error {
-  margin: 0 0 var(--space-field);
-  color: var(--color-error);
-}

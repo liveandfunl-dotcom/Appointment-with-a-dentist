@@ -1,52 +1,21 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router';
 
-import { api } from '../../api/client';
+import { getFreeWindows } from '../../api/appointments';
+import { listUsers } from '../../api/users';
 import { useAuth } from '../../auth/AuthContext';
 import { DatePicker } from '../../components/DatePicker/DatePicker';
+import { FormField } from '../../components/FormField/FormField';
+import { Message } from '../../components/Message/Message';
+import { useAsync } from '../../hooks/useAsync';
+import { useToday } from '../../clinic/ClinicContext';
+import { weekdayOf } from '../../utils/date';
+import { fullName } from '../../utils/person';
+import { toMinutes, toTime } from '../../utils/time';
+import { MIN_DURATION } from './booking-slots';
+import { WindowsPanel } from './WindowsPanel';
 import './booking.css';
-
-interface Doctor {
-  id: number;
-  surname: string;
-  name: string;
-  role: 'doctor' | 'admin';
-  workDays: number[];
-  isActive: boolean;
-}
-
-interface FreeWindow {
-  start: string;
-  end: string;
-}
-
-interface WindowsResult {
-  key: string;
-  windows: FreeWindow[] | null; // null — ошибка запроса
-}
-
-const STEP = 30;
-const MIN_DURATION = 60;
-
-const pad = (n: number) => String(n).padStart(2, '0');
-const toMinutes = (time: string) => {
-  const [h, m] = time.split(':').map(Number);
-  return h * 60 + m;
-};
-const toTime = (minutes: number) => `${pad(Math.floor(minutes / 60))}:${pad(minutes % 60)}`;
-const formatDuration = (minutes: number) => `${Math.floor(minutes / 60)}:${pad(minutes % 60)}`;
-
-function todayIso(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-}
-
-/** День недели 1 (пн) … 7 (вс). */
-function weekday(date: string): number {
-  const [y, m, d] = date.split('-').map(Number);
-  return new Date(y, m - 1, d).getDay() || 7;
-}
 
 export function BookingPage() {
   const { t } = useTranslation();
@@ -55,65 +24,38 @@ export function BookingPage() {
   const location = useLocation();
   const flash = location.state as { booked?: boolean; mailSent?: boolean } | null;
 
-  const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [selectedId, setSelectedId] = useState('');
   const [date, setDate] = useState<string | null>(null);
   const [start, setStart] = useState('');
   const [duration, setDuration] = useState(MIN_DURATION);
-  const [result, setResult] = useState<WindowsResult | null>(null);
-  const [usersFailed, setUsersFailed] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    api.get<Doctor[]>('/api/users').then(
-      (users) => {
-        if (!cancelled) setDoctors(users.filter((u) => u.role === 'doctor' && u.isActive));
-      },
-      () => {
-        if (!cancelled) setUsersFailed(true);
-      },
-    );
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const users = useAsync(listUsers, []);
+  const doctors = (users.data ?? []).filter((u) => u.role === 'doctor' && u.isActive);
 
   const isDoctor = user?.role === 'doctor';
   const doctorId = isDoctor ? user.id : Number(selectedId) || null;
   const doctor = doctors.find((d) => d.id === doctorId);
-  const key = doctorId !== null && date ? `${doctorId}|${date}` : null;
+  const hasSelection = doctorId !== null && date !== null;
 
-  useEffect(() => {
-    if (key === null) return;
-    const [id, day] = key.split('|');
-    let cancelled = false;
-    api.get<FreeWindow[]>(`/api/doctors/${id}/free-windows?date=${day}`).then(
-      (windows) => {
-        if (!cancelled) setResult({ key, windows });
-      },
-      () => {
-        if (!cancelled) setResult({ key, windows: null });
-      },
-    );
-    return () => {
-      cancelled = true;
-    };
-  }, [key]);
+  const windows = useAsync(hasSelection ? () => getFreeWindows(doctorId, date) : null, [doctorId, date]);
 
-  const today = todayIso();
-  const isDateDisabled = (d: string) => !doctor || d < today || !doctor.workDays.includes(weekday(d));
+  const today = useToday();
+  const isDateDisabled = (d: string) => !doctor || d < today || !doctor.workDays.includes(weekdayOf(d));
 
-  const onDoctorChange = (value: string) => {
-    setSelectedId(value);
-    setDate(null);
+  const resetTime = () => {
     setStart('');
     setDuration(MIN_DURATION);
   };
 
+  const onDoctorChange = (value: string) => {
+    setSelectedId(value);
+    setDate(null);
+    resetTime();
+  };
+
   const onDateChange = (value: string) => {
     setDate(value);
-    setStart('');
-    setDuration(MIN_DURATION);
+    resetTime();
   };
 
   const onStartChange = (value: string) => {
@@ -121,24 +63,12 @@ export function BookingPage() {
     setDuration(MIN_DURATION);
   };
 
-  const windows = result && result.key === key ? result.windows : undefined;
-  const startMarks = (windows ?? []).flatMap((w) => {
-    const marks: string[] = [];
-    for (let m = toMinutes(w.start); m + MIN_DURATION <= toMinutes(w.end); m += STEP) marks.push(toTime(m));
-    return marks;
-  });
-  const startWindow = start ? windows?.find((w) => toMinutes(w.start) <= toMinutes(start) && toMinutes(start) < toMinutes(w.end)) : undefined;
-  const durations: number[] = [];
-  if (start && startWindow) {
-    for (let d = MIN_DURATION; toMinutes(start) + d <= toMinutes(startWindow.end); d += STEP) durations.push(d);
-  }
-
   const submit = () => {
     if (!doctor || !date || !start) return;
     navigate('/booking/form', {
       state: {
         doctorId: doctor.id,
-        doctorName: `${doctor.surname} ${doctor.name}`,
+        doctorName: fullName(doctor),
         date,
         start,
         end: toTime(toMinutes(start) + duration),
@@ -146,63 +76,23 @@ export function BookingPage() {
     });
   };
 
-  let content;
-  if (key === null) {
-    content = null;
-  } else if (windows === undefined) {
-    content = <p>{t('common.loading')}</p>;
-  } else if (windows === null) {
-    content = (
-      <p className="form-field__error" role="alert">
-        {t('common.genericError')}
-      </p>
-    );
-  } else if (windows.length === 0) {
-    content = <p>{t('booking.noWindows')}</p>;
-  } else {
-    content = (
-      <>
-        <h2>{t('booking.windows')}</h2>
-        <ul className="booking__windows">
-          {windows.map((w) => (
-            <li key={w.start}>{`${w.start}–${w.end}`}</li>
-          ))}
-        </ul>
-        <div className="form-field">
-          <label className="form-field__label" htmlFor="booking-start">
-            {t('booking.start')}
-          </label>
-          <select id="booking-start" value={start} onChange={(e) => onStartChange(e.target.value)}>
-            <option value="">—</option>
-            {startMarks.map((mark) => (
-              <option key={mark} value={mark}>
-                {mark}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="form-field">
-          <label className="form-field__label" htmlFor="booking-duration">
-            {t('booking.duration')}
-          </label>
-          <select
-            id="booking-duration"
-            value={duration}
-            disabled={!start}
-            onChange={(e) => setDuration(Number(e.target.value))}
-          >
-            {durations.map((d) => (
-              <option key={d} value={d}>
-                {formatDuration(d)}
-              </option>
-            ))}
-          </select>
-        </div>
-        <button type="button" className="button button--primary" disabled={!start} onClick={submit}>
-          {t('booking.submit')}
-        </button>
-      </>
-    );
+  let content = null;
+  if (hasSelection) {
+    if (windows.loading) content = <Message variant="muted">{t('common.loading')}</Message>;
+    else if (windows.error || !windows.data) content = <Message variant="error">{t('common.genericError')}</Message>;
+    else if (windows.data.length === 0) content = <Message variant="muted">{t('booking.noWindows')}</Message>;
+    else {
+      content = (
+        <WindowsPanel
+          windows={windows.data}
+          start={start}
+          duration={duration}
+          onStartChange={onStartChange}
+          onDurationChange={setDuration}
+          onSubmit={submit}
+        />
+      );
+    }
   }
 
   return (
@@ -214,33 +104,23 @@ export function BookingPage() {
           {flash.mailSent === false && <p>{t('booking.mailNotSent')}</p>}
         </div>
       )}
-      {usersFailed && (
-        <p className="form-field__error" role="alert">
-          {t('common.genericError')}
-        </p>
-      )}
-      {key === null && <p className="booking__hint">{t('booking.selectDoctorAndDate')}</p>}
+      {users.error !== undefined && <Message variant="error">{t('common.genericError')}</Message>}
+      {!hasSelection && <Message variant="muted" spaced>{t('booking.selectDoctorAndDate')}</Message>}
       <div className="booking__layout">
         <div className="booking__aside">
-          <div className="form-field">
-            <label className="form-field__label" htmlFor="booking-doctor">
-              {t('common.doctor')}
-            </label>
-            <select
-              id="booking-doctor"
-              value={doctorId ?? ''}
-              disabled={isDoctor}
-              onChange={(e) => onDoctorChange(e.target.value)}
-            >
-              {!isDoctor && <option value="">{t('booking.selectDoctor')}</option>}
-              {doctors.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {`${d.surname} ${d.name}`}
-                </option>
-              ))}
-            </select>
-          </div>
-          <DatePicker value={date} onChange={onDateChange} isDateDisabled={isDateDisabled} />
+          <FormField label={t('common.doctor')}>
+            {(control) => (
+              <select {...control} value={doctorId ?? ''} disabled={isDoctor} onChange={(e) => onDoctorChange(e.target.value)}>
+                {!isDoctor && <option value="">{t('booking.selectDoctor')}</option>}
+                {doctors.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {fullName(d)}
+                  </option>
+                ))}
+              </select>
+            )}
+          </FormField>
+          <DatePicker key={today} value={date} onChange={onDateChange} isDateDisabled={isDateDisabled} today={today} />
         </div>
         <div className="booking__content">{content}</div>
       </div>
