@@ -1,0 +1,13 @@
+.doctors__search {
+  max-width: 420px;
+}
+
+.doctors__empty {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.doctors__error {
+  margin: 0;
+  color: var(--color-error);
+}

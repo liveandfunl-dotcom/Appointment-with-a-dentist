@@ -1,0 +1,19 @@
+.login {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: var(--space-page);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background-color: var(--color-surface);
+}
+
+.login__status {
+  margin: 0 0 var(--space-field);
+  color: var(--color-success);
+}
+
+.login__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
