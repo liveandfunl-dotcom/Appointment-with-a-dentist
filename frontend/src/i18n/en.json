@@ -1,5 +1,6 @@
 {
   "common": {
+    "appTitle": "Dentist appointments",
     "yes": "Yes",
     "no": "No",
     "save": "Save",
@@ -19,7 +20,6 @@
       "records": "Appointments",
       "booking": "Book an appointment",
       "doctors": "Doctors",
-      "bookingForm": "Booking form",
       "addDoctor": "Add doctor"
     },
     "language": "Language",
@@ -110,8 +110,6 @@
     "comment": "Comment",
     "submit": "Book",
     "confirm": "Confirm the appointment",
-    "noSlot": "First select a doctor, date and time",
-    "toBooking": "Go to booking",
     "slotTaken": "This time is already taken. Please choose another.",
     "slotUnavailable": "This time is not available for booking."
   },

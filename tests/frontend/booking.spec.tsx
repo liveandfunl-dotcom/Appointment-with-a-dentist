@@ -4,7 +4,7 @@
  * (и сообщение об успехе после записи — часть AC-UI-FORM-03).
  * «Сегодня» — четверг 26.11.2026, 10:00. Пн–пт — рабочие дни Иванова, пн/ср/пт — Петровой.
  */
-import { screen, within } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 
 import { ok, type ApiRoutes } from './support/api-mock';
 import { freezeTime, renderApp, type MeOption, type RouteEntry } from './support/render';
@@ -48,18 +48,22 @@ async function pickDoctorAndDate(app: Awaited<ReturnType<typeof openBooking>>, d
 }
 
 describe('BookingPage — врач и календарь', () => {
-  test('AC-UI-BOOK-01: слева список врачей над календарём; справа подсказка «Выберите врача и дату»', async () => {
+  test('AC-UI-BOOK-01: слева список врачей над календарём; подсказка «Выберите врача и дату» — под заголовком страницы', async () => {
     const { container } = await openBooking('admin');
 
     const aside = container.querySelector('.booking__aside') as HTMLElement | null;
-    const content = container.querySelector('.booking__content') as HTMLElement | null;
+    const layout = container.querySelector('.booking__layout') as HTMLElement | null;
     expect(aside).not.toBeNull();
-    expect(content).not.toBeNull();
+    expect(layout).not.toBeNull();
     expect(aside).toContainElement(doctorSelect());
     expect(aside).toContainElement(day('2026-11-01'));
-    expect(content).not.toContainElement(doctorSelect());
     expect(doctorSelect().compareDocumentPosition(day('2026-11-01')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(within(content!).getByText('Выберите врача и дату')).toBeInTheDocument();
+
+    const title = screen.getByRole('heading', { level: 1, name: 'Запись на приём' });
+    const hint = screen.getByText('Выберите врача и дату');
+    expect(layout).not.toContainElement(hint);
+    expect(title.compareDocumentPosition(hint) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(hint.compareDocumentPosition(aside!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.queryByLabelText('Время начала')).not.toBeInTheDocument();
   });
 

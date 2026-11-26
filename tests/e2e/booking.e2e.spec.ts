@@ -6,7 +6,7 @@ import { addDays, formatDate, nextDayOff, nextWorkingDate, today } from './suppo
 import { CLINIC_TZ, uid } from './support/env';
 import { clearMailbox, plainText, waitForMessage } from './support/mailpit';
 import { ADMIN, DOCTOR2, DOCTOR5, SEED_DOCTORS, fullName } from './support/seed';
-import { addMinutes, chooseSlot, dayButton, dialog, mainMenu, optionTexts, pickDate, timeRange } from './support/ui';
+import { addMinutes, chooseSlot, dayButton, dialog, optionTexts, pickDate, timeRange } from './support/ui';
 
 // AC-UI-BOOK-01…05, AC-UI-FORM-01…05 (docs/specs/ui/screens.md: 5.4, 5.5; письмо — api.md, раздел 5).
 // Записи делаются к doctor5 (принимает каждый день 08:00–20:00). Каждый тест берёт свою дату
@@ -57,9 +57,13 @@ test.describe('Запись на приём', () => {
     const nav = page.getByRole('button', { name: 'Следующий месяц' });
     const [selectBox, calendarBox] = [await select.boundingBox(), await nav.boundingBox()];
     expect(calendarBox!.y).toBeGreaterThan(selectBox!.y);
+    // подсказка — под заголовком страницы, над списком врачей, слева
     await expect(page.getByText('Выберите врача и дату')).toBeVisible();
     const hint = await page.getByText('Выберите врача и дату').boundingBox();
-    expect(hint!.x).toBeGreaterThan(selectBox!.x + selectBox!.width / 2);
+    const title = await page.getByRole('heading', { level: 1, name: 'Запись на приём' }).boundingBox();
+    expect(hint!.y).toBeGreaterThan(title!.y + title!.height - 1);
+    expect(hint!.y + hint!.height).toBeLessThanOrEqual(selectBox!.y);
+    expect(Math.abs(hint!.x - title!.x)).toBeLessThanOrEqual(2);
   });
 
   test('AC-UI-BOOK-01: врачу он сам выбран заранее, список заблокирован; врач записывает пациента только к себе', async ({
@@ -304,19 +308,15 @@ test.describe('Форма записи', () => {
     await expect(page.getByLabel('Телефон', { exact: true })).toHaveValue('+30 690 999 9999');
   });
 
-  test('AC-UI-FORM-05: «Форма записи» из меню без выбранного слота — подсказка и ссылка на «Запись на приём»', async ({
+  test('AC-UI-FORM-05: прямой переход на /booking/form без слота перенаправляет на «Запись на приём»', async ({
     page,
   }) => {
     await loginAs(page, ADMIN);
-    await page.goto('/records');
-    await mainMenu(page).getByRole('link', { name: 'Форма записи' }).click();
+    await page.goto('/booking/form');
 
-    await expect(page).toHaveURL(/\/booking\/form$/);
-    await expect(page.getByText('Сначала выберите врача, дату и время')).toBeVisible();
-    await expect(page.getByLabel('Имя пациента', { exact: true })).toHaveCount(0);
-    await expect(page.getByLabel('Телефон', { exact: true })).toHaveCount(0);
-
-    await page.getByRole('main').getByRole('link', { name: 'Перейти к записи на приём' }).click();
     await expect(page).toHaveURL(/\/booking$/);
+    await expect(page.getByRole('heading', { level: 1, name: 'Запись на приём' })).toBeVisible();
+    await expect(page.getByText('Сначала выберите врача, дату и время')).toHaveCount(0);
+    await expect(page.getByLabel('Имя пациента', { exact: true })).toHaveCount(0);
   });
 });

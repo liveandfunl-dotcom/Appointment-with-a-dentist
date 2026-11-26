@@ -1,6 +1,6 @@
 /**
  * Шапка, меню по ролям, закрытые маршруты и выход (docs/specs/ui/screens.md, разделы 2, 3.1, 3.3).
- * AC-UI-HEADER-01…03, AC-UI-LOGOUT-01.
+ * AC-UI-HEADER-01…04, AC-UI-LOGOUT-01.
  */
 import { act, screen, waitFor, within } from '@testing-library/react';
 
@@ -11,7 +11,6 @@ const MENU = {
   records: { name: 'Записи', href: '/records' },
   booking: { name: 'Запись на приём', href: '/booking' },
   doctors: { name: 'Карточки врачей', href: '/doctors' },
-  bookingForm: { name: 'Форма записи', href: '/booking/form' },
   addDoctor: { name: 'Добавить врача', href: '/doctors/new' },
 };
 
@@ -58,11 +57,11 @@ describe('Шапка', () => {
     expect(menuLinks()).toEqual([MENU.doctors]);
   });
 
-  test('AC-UI-HEADER-02: врач видит «Записи», «Запись на приём», «Карточки врачей», «Форма записи»', async () => {
+  test('AC-UI-HEADER-02: врач видит «Записи», «Запись на приём», «Карточки врачей»', async () => {
     await renderApp('/doctors', { me: 'doctor' });
     await waitForAuth('doctor');
 
-    expect(menuLinks()).toEqual([MENU.records, MENU.booking, MENU.doctors, MENU.bookingForm]);
+    expect(menuLinks()).toEqual([MENU.records, MENU.booking, MENU.doctors]);
   });
 
   test.each<[MeOption]>([['admin'], ['root']])(
@@ -71,7 +70,19 @@ describe('Шапка', () => {
       await renderApp('/doctors', { me });
       await waitForAuth(me);
 
-      expect(menuLinks()).toEqual([MENU.records, MENU.booking, MENU.doctors, MENU.bookingForm, MENU.addDoctor]);
+      expect(menuLinks()).toEqual([MENU.records, MENU.booking, MENU.doctors, MENU.addDoctor]);
+    },
+  );
+
+  test.each<[MeOption]>([['guest'], ['doctor'], ['admin'], ['root']])(
+    'AC-UI-HEADER-04: у роли %s в меню нет «Форма записи» и ссылки на /booking/form',
+    async (me) => {
+      await renderApp('/doctors', { me });
+      await waitForAuth(me);
+
+      const links = menuLinks();
+      expect(links.map((l) => l.name)).not.toContain('Форма записи');
+      expect(links.map((l) => l.href)).not.toContain('/booking/form');
     },
   );
 

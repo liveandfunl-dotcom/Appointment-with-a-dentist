@@ -21,7 +21,6 @@ const MENU: MenuItem[] = [
   { key: 'records', to: '/records', visibleTo: STAFF },
   { key: 'booking', to: '/booking', visibleTo: STAFF },
   { key: 'doctors', to: '/doctors', visibleTo: [...ANY] },
-  { key: 'bookingForm', to: '/booking/form', visibleTo: STAFF },
   { key: 'addDoctor', to: '/doctors/new', visibleTo: ['admin', 'root'] },
 ];
 

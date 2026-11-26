@@ -113,7 +113,6 @@ describe('i18n', () => {
       'Appointments',
       'Book an appointment',
       'Doctors',
-      'Booking form',
       'Add doctor',
     ]);
     expect(within(screen.getByRole('banner')).getByRole('button', { name: 'Sign out' })).toBeInTheDocument();
@@ -131,6 +130,30 @@ describe('i18n', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Σύνδεση' })).toBeInTheDocument();
     expect(languageSelect()).toHaveValue('el');
     expect(document.documentElement).toHaveAttribute('lang', 'el');
+  });
+
+  test('AC-I18N-01: <title> страницы переводится вместе с языком', async () => {
+    const app = await openLoginPage();
+    expect(document.title).toBe('Запись к стоматологу');
+
+    await app.user.selectOptions(languageSelect(), 'en');
+    await screen.findByRole('heading', { level: 1, name: 'Sign in' });
+    expect(document.title).toBe('Dentist appointments');
+
+    await app.user.selectOptions(languageSelect(), 'el');
+    await screen.findByRole('heading', { level: 1, name: 'Σύνδεση' });
+    expect(document.title).toBe('Ραντεβού στον οδοντίατρο');
+
+    await app.user.selectOptions(languageSelect(), 'ru');
+    await screen.findByRole('heading', { level: 1, name: 'Вход' });
+    expect(document.title).toBe('Запись к стоматологу');
+  });
+
+  test('AC-I18N-01: <title> берёт язык из localStorage при загрузке', async () => {
+    localStorage.setItem('lang', 'en');
+    await renderApp('/login', { me: 'guest' });
+    await screen.findByRole('heading', { level: 1, name: 'Sign in' });
+    expect(document.title).toBe('Dentist appointments');
   });
 
   test('AC-I18N-01: неизвестное значение в localStorage → RU', async () => {

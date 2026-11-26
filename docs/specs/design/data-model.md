@@ -1,7 +1,7 @@
 # Модель данных (SQLite)
 
 Спека — контракт для модуля `backend/src/db` и для тестов `tests/api/db.spec.ts`.
-Источник: план `docs/plans/clinic-mvp.md`, исходная модель `описание проекта/структура БД.md`.
+Источник: обзор `docs/impl/clinic-mvp.md`, исходная модель `описание проекта/структура БД.md`.
 
 Связанные критерии: AC-DB-01, AC-DB-02, AC-DB-03, AC-DB-04, а также AC-AUTH-03…10 (MagicLinks, Sessions), AC-USERS-* (Users), AC-APPT-*, AC-SLOTS-* (Appointments).
 

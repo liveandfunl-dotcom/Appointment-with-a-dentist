@@ -5,7 +5,7 @@ import { CLINIC_TZ } from './support/env';
 import { ADMIN, DOCTOR1, ROOT } from './support/seed';
 import { header, mainMenu } from './support/ui';
 
-// AC-UI-HEADER-01…03, AC-I18N-01 (docs/specs/ui/screens.md: 2, 3, 6).
+// AC-UI-HEADER-01…04, AC-I18N-01 (docs/specs/ui/screens.md: 2, 3, 6).
 
 test.use({ timezoneId: CLINIC_TZ, actionTimeout: 10_000 });
 
@@ -32,7 +32,7 @@ test.describe('Шапка', () => {
 
   test('AC-UI-HEADER-01: у вошедшего на всех страницах есть шапка: меню, выбор языка, «Выйти»', async ({ page }) => {
     await loginAs(page, ADMIN);
-    for (const path of ['/records', '/booking', '/booking/form', '/doctors', '/doctors/new']) {
+    for (const path of ['/records', '/booking', '/doctors', '/doctors/new']) {
       await page.goto(path);
       await expect(page).toHaveURL(new RegExp(`${path.replace(/\//g, '\\/')}$`));
       await expectHeader(page, true);
@@ -50,10 +50,10 @@ test.describe('Шапка', () => {
     await expect(page).toHaveURL(/\/login$/);
   });
 
-  test('AC-UI-HEADER-02: врач видит «Записи», «Запись на приём», «Карточки врачей», «Форма записи»', async ({ page }) => {
+  test('AC-UI-HEADER-02: врач видит «Записи», «Запись на приём», «Карточки врачей»', async ({ page }) => {
     await loginAs(page, DOCTOR1);
     await page.goto('/records');
-    expect(await menuItems(page)).toEqual(['Записи', 'Запись на приём', 'Карточки врачей', 'Форма записи']);
+    expect(await menuItems(page)).toEqual(['Записи', 'Запись на приём', 'Карточки врачей']);
   });
 
   for (const user of [ADMIN, ROOT]) {
@@ -64,13 +64,11 @@ test.describe('Шапка', () => {
         'Записи',
         'Запись на приём',
         'Карточки врачей',
-        'Форма записи',
         'Добавить врача',
       ]);
       const routes: [string, string][] = [
         ['Запись на приём', '/booking'],
         ['Карточки врачей', '/doctors'],
-        ['Форма записи', '/booking/form'],
         ['Добавить врача', '/doctors/new'],
         ['Записи', '/records'],
       ];
@@ -80,6 +78,15 @@ test.describe('Шапка', () => {
         await expect(page).toHaveURL(new RegExp(`${path.replace(/\//g, '\\/')}$`));
         await expect(link).toHaveAttribute('aria-current', 'page');
       }
+    });
+  }
+
+  for (const user of [DOCTOR1, ADMIN, ROOT]) {
+    test(`AC-UI-HEADER-04: у ${user.login} в меню нет «Форма записи» и ссылки на /booking/form`, async ({ page }) => {
+      await loginAs(page, user);
+      await page.goto('/records');
+      expect(await menuItems(page)).not.toContain('Форма записи');
+      await expect(mainMenu(page).locator('a[href="/booking/form"]')).toHaveCount(0);
     });
   }
 
@@ -145,7 +152,7 @@ test.describe('Языки', () => {
     await loginAs(page, ADMIN);
     await page.goto('/records');
     await header(page).getByRole('combobox', { name: 'Язык' }).selectOption('en');
-    expect(await menuItems(page)).toEqual(['Appointments', 'Book an appointment', 'Doctors', 'Booking form', 'Add doctor']);
+    expect(await menuItems(page)).toEqual(['Appointments', 'Book an appointment', 'Doctors', 'Add doctor']);
     await expect(page.getByRole('heading', { level: 1, name: 'Appointments' })).toBeVisible();
     await expect(header(page).getByRole('button', { name: 'Sign out' })).toBeVisible();
 

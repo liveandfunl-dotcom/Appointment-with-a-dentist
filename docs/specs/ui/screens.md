@@ -1,9 +1,9 @@
 # Экраны и сценарии UI
 
 Спека — контракт для `frontend/src` и для тестов `tests/frontend/*.spec.tsx` (Jest + RTL) и `tests/e2e/*.spec.ts` (Playwright).
-Источник: план `docs/plans/clinic-mvp.md`. API — `docs/specs/system/api.md`.
+Источник: обзор `docs/impl/clinic-mvp.md`. API — `docs/specs/system/api.md`.
 
-Связанные критерии: AC-UI-HEADER-01…03, AC-I18N-01…02, AC-UI-LOGIN-01…05, AC-UI-LOGOUT-01, AC-UI-DP-01, AC-UI-REC-01…04, AC-UI-BOOK-01…05, AC-UI-FORM-01…05, AC-UI-CARDS-01…03, AC-UI-DOC-01…06, AC-STYLE-01…03.
+Связанные критерии: AC-UI-HEADER-01…04, AC-I18N-01…02, AC-UI-LOGIN-01…05, AC-UI-LOGOUT-01, AC-UI-DP-01, AC-UI-REC-01…04, AC-UI-BOOK-01…05, AC-UI-FORM-01…05, AC-UI-CARDS-01…03, AC-UI-DOC-01…06, AC-STYLE-01…03.
 
 ## 1. Общие правила
 
@@ -40,7 +40,7 @@
 
 Редиректы — с `replace` (AC-UI-HEADER-03, AC-UI-DOC-06).
 
-## 3. Каркас и шапка (AC-UI-HEADER-01, 02, AC-UI-LOGOUT-01, AC-I18N-01)
+## 3. Каркас и шапка (AC-UI-HEADER-01, 02, 04, AC-UI-LOGOUT-01, AC-I18N-01)
 
 ```
 <div class="app">
@@ -64,7 +64,6 @@
 | Записи | `header.menu.records` | `/records` | — | ✓ | ✓ |
 | Запись на приём | `header.menu.booking` | `/booking` | — | ✓ | ✓ |
 | Карточки врачей | `header.menu.doctors` | `/doctors` | ✓ | ✓ | ✓ |
-| Форма записи | `header.menu.bookingForm` | `/booking/form` | — | ✓ | ✓ |
 | Добавить врача | `header.menu.addDoctor` | `/doctors/new` | — | — | ✓ |
 
 ### 3.2. Выбор языка
@@ -185,7 +184,7 @@ interface DatePickerProps {
 
 **Справа:**
 
-- Врач или дата не выбраны → `booking.selectDoctorAndDate`.
+- Врач или дата не выбраны → правая колонка пуста, а `booking.selectDoctorAndDate` показывается под заголовком страницы (после сообщений об успехе и ошибке), над колонками.
 - Врач и дата выбраны → `GET /api/doctors/:id/free-windows?date=…`.
   - `[]` → `booking.noWindows` (AC-UI-BOOK-05).
   - Иначе (AC-UI-BOOK-03):
@@ -201,7 +200,7 @@ interface DatePickerProps {
 
 Заголовок `<h1>` — `bookingForm.title`.
 
-- **Нет слота в `location.state`** (открыта из меню) → текст `bookingForm.noSlot` и ссылка `bookingForm.toBooking` на `/booking`. Полей формы нет (AC-UI-FORM-05).
+- **Нет слота в `location.state`** (прямой URL, перезагрузка страницы) → `<Navigate to="/booking" replace />`; ни формы, ни подсказки не показывается (AC-UI-FORM-05).
 - **Есть слот** (AC-UI-FORM-01):
   - только для чтения (`<input readOnly>`): `bookingForm.doctor` (Фамилия Имя), `bookingForm.date` (`DD.MM.YYYY`), `bookingForm.time` (`start–end`);
   - `bookingForm.patientName` — обязательное;
@@ -278,6 +277,7 @@ interface DatePickerProps {
 
 | Ключ | ru | en | el |
 |---|---|---|---|
+| `common.appTitle` | Запись к стоматологу | Dentist appointments | Ραντεβού στον οδοντίατρο |
 | `common.yes` | Да | Yes | Ναι |
 | `common.no` | Нет | No | Όχι |
 | `common.save` | Сохранить | Save | Αποθήκευση |
@@ -294,7 +294,6 @@ interface DatePickerProps {
 | `header.menu.records` | Записи | Appointments | Ραντεβού |
 | `header.menu.booking` | Запись на приём | Book an appointment | Κλείσιμο ραντεβού |
 | `header.menu.doctors` | Карточки врачей | Doctors | Κάρτες γιατρών |
-| `header.menu.bookingForm` | Форма записи | Booking form | Φόρμα ραντεβού |
 | `header.menu.addDoctor` | Добавить врача | Add doctor | Προσθήκη γιατρού |
 | `header.language` | Язык | Language | Γλώσσα |
 | `header.login` | Войти | Sign in | Σύνδεση |
@@ -368,8 +367,6 @@ interface DatePickerProps {
 | `bookingForm.comment` | Комментарий | Comment | Σχόλιο |
 | `bookingForm.submit` | Записать | Book | Κράτηση |
 | `bookingForm.confirm` | Подтвердить запись | Confirm the appointment | Επιβεβαίωση ραντεβού |
-| `bookingForm.noSlot` | Сначала выберите врача, дату и время | First select a doctor, date and time | Επιλέξτε πρώτα γιατρό, ημερομηνία και ώρα |
-| `bookingForm.toBooking` | Перейти к записи на приём | Go to booking | Μετάβαση στο κλείσιμο ραντεβού |
 | `bookingForm.slotTaken` | Это время уже занято. Выберите другое. | This time is already taken. Please choose another. | Αυτή η ώρα είναι ήδη κρατημένη. Επιλέξτε άλλη. |
 | `bookingForm.slotUnavailable` | Это время недоступно для записи. | This time is not available for booking. | Αυτή η ώρα δεν είναι διαθέσιμη για κράτηση. |
 | `doctors.title` | Карточки врачей | Doctors | Κάρτες γιατρών |

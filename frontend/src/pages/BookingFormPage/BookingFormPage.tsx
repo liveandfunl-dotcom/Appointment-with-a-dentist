@@ -1,6 +1,6 @@
 import { useId, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useLocation, useNavigate } from 'react-router';
+import { Navigate, useLocation, useNavigate } from 'react-router';
 
 import { api, ApiError } from '../../api/client';
 import { ConfirmDialog } from '../../components/ConfirmDialog/ConfirmDialog';
@@ -42,15 +42,7 @@ export function BookingFormPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
-  if (!slot) {
-    return (
-      <section className="booking-form">
-        <h1>{t('bookingForm.title')}</h1>
-        <p>{t('bookingForm.noSlot')}</p>
-        <Link to="/booking">{t('bookingForm.toBooking')}</Link>
-      </section>
-    );
-  }
+  if (!slot) return <Navigate to="/booking" replace />;
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();

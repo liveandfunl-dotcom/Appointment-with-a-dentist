@@ -33,9 +33,13 @@ export async function createI18n(lang?: Lang): Promise<i18n> {
     initAsync: false,
   });
 
-  document.documentElement.lang = instance.language;
+  const syncDocument = (lang: string) => {
+    document.documentElement.lang = lang;
+    document.title = instance.t('common.appTitle');
+  };
+  syncDocument(instance.language);
   instance.on('languageChanged', (next) => {
-    document.documentElement.lang = next;
+    syncDocument(next);
     try {
       localStorage.setItem(LANG_STORAGE_KEY, next);
     } catch {
