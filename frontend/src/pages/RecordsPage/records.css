@@ -1,0 +1,26 @@
+.records__layout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-page);
+}
+
+.records__aside {
+  flex: 0 0 320px;
+  max-width: 100%;
+}
+
+.records__content {
+  flex: 1 1 400px;
+  min-width: 0;
+}
+
+.records__hint {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.records__error {
+  margin: 0 0 var(--space-field);
+  color: var(--color-error);
+}

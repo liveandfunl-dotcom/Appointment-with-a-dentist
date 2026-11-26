@@ -1,0 +1,11 @@
+{
+  "extends": "../frontend/tsconfig.app.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": null,
+    "types": ["node", "jest", "@testing-library/jest-dom"],
+    "verbatimModuleSyntax": false,
+    "esModuleInterop": true,
+    "resolveJsonModule": true
+  },
+  "include": ["frontend", "support", "../frontend/src"]
+}

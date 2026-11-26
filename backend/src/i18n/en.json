@@ -1,0 +1,12 @@
+{
+  "mail": {
+    "magicLink": {
+      "subject": "Sign in to the appointment system",
+      "text": "Hello, {{name}}!\n\nTo sign in, follow the link: {{link}}\n\nThe link is valid for 30 minutes and can be used once."
+    },
+    "appointment": {
+      "subject": "New appointment",
+      "text": "A patient has been booked: {{patientName}}, {{date}} {{start}}–{{end}}. Contact phone: {{patientPhone}}"
+    }
+  }
+}

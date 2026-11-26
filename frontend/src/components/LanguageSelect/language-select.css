@@ -1,0 +1,9 @@
+.language-select {
+  position: relative;
+}
+
+.language-select__control {
+  width: auto;
+  padding: 6px 10px;
+  cursor: pointer;
+}

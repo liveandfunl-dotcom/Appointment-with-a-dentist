@@ -1,0 +1,65 @@
+.doctor-card {
+  position: relative;
+  height: 100%;
+  padding: 16px 48px 16px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background-color: var(--color-surface);
+}
+
+.doctor-card--inactive {
+  border-style: dashed;
+  background-color: var(--color-disabled-bg);
+  color: var(--color-text-muted);
+}
+
+.doctor-card__title {
+  margin: 0 0 8px;
+}
+
+.doctor-card__badge {
+  display: inline-block;
+  margin: 0 0 8px;
+  padding: 2px 8px;
+  border-radius: var(--radius-field);
+  background-color: var(--color-secondary);
+  color: var(--color-text);
+  font-size: 0.875rem;
+}
+
+.doctor-card__badge--inactive {
+  background-color: var(--color-disabled-bg);
+  color: var(--color-text-muted);
+}
+
+.doctor-card__details {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 12px;
+  margin: 0;
+}
+
+.doctor-card__label {
+  color: var(--color-text-muted);
+}
+
+.doctor-card__value {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.doctor-card__edit {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 2px 8px;
+  border-radius: var(--radius-field);
+  color: var(--color-accent);
+  font-size: 1.25rem;
+  line-height: 1.2;
+  text-decoration: none;
+}
+
+.doctor-card__edit:hover {
+  background-color: var(--color-secondary-hover);
+}
