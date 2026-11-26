@@ -8,8 +8,9 @@ export function header(page: Page): Locator {
   return page.getByRole('banner');
 }
 
+/** Меню шапки. Название `header.navLabel` переводится, поэтому ищем без имени: в шапке одна навигация. */
 export function mainMenu(page: Page): Locator {
-  return header(page).getByRole('navigation', { name: 'Главное меню' });
+  return header(page).getByRole('navigation');
 }
 
 /** Открытый попап с вопросом `title` (role="dialog", доступное имя = текст вопроса). */

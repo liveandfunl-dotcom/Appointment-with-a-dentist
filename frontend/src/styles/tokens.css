@@ -7,6 +7,8 @@
   --color-secondary: #FBE3CF;
   --color-secondary-hover: #FDEEDF;
   --color-selected: #F4B183;
+  --color-nav-active: #C96F4A;
+  --color-nav-active-text: #FFFFFF;
   --color-disabled-bg: #F3E6DA;
   --color-border: #E6CDB6;
   --color-overlay: rgba(160, 110, 70, 0.25);

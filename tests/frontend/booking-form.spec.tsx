@@ -354,42 +354,26 @@ describe('BookingFormPage — ошибки сервера', () => {
 });
 
 describe('BookingFormPage — без выбранного слота', () => {
-  test('AC-UI-FORM-05: открытая без слота форма показывает подсказку и ссылку на «Запись на приём»', async () => {
-    await openForm({ state: undefined });
+  const openWithoutSlot = (me: MeOption = 'admin') =>
+    renderApp(
+      { pathname: '/booking/form', state: undefined },
+      { me, api: { 'GET /api/users': ok([IVANOV, PETROVA]), 'GET /api/doctors/:id/free-windows': ok([]) } },
+    );
 
-    expect(screen.getByText('Сначала выберите врача, дату и время')).toBeInTheDocument();
-    const link = screen.getByRole('link', { name: 'Перейти к записи на приём' });
-    expect(link).toHaveAttribute('href', '/booking');
-  });
+  test('AC-UI-FORM-05: открытая без слота форма перенаправляет на /booking', async () => {
+    const app = await openWithoutSlot();
 
-  test('AC-UI-FORM-05: полей формы и кнопок нет', async () => {
-    await openForm({ state: undefined });
-
-    expect(screen.queryByLabelText('Имя пациента')).not.toBeInTheDocument();
-    expect(screen.queryByLabelText('Телефон')).not.toBeInTheDocument();
-    expect(screen.queryByLabelText('Комментарий')).not.toBeInTheDocument();
-    expect(screen.queryByLabelText('Врач')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Записать' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Назад' })).not.toBeInTheDocument();
-  });
-
-  test('AC-UI-FORM-05: ссылка ведёт на /booking', async () => {
-    const app = await openForm({ state: undefined });
-
-    await app.user.click(screen.getByRole('link', { name: 'Перейти к записи на приём' }));
-
-    expect(app.location().pathname).toBe('/booking');
     expect(await screen.findByRole('heading', { level: 1, name: 'Запись на приём' })).toBeInTheDocument();
+    expect(app.location().pathname).toBe('/booking');
   });
 
-  test('AC-UI-FORM-05: переход по меню «Форма записи» из других страниц тоже даёт подсказку', async () => {
-    const app = await openForm({ state: undefined });
-    await app.user.click(screen.getByRole('link', { name: 'Запись на приём' }));
+  test('AC-UI-FORM-05: редирект идёт с replace, формы и подсказки нет', async () => {
+    const app = await openWithoutSlot();
     await screen.findByRole('heading', { level: 1, name: 'Запись на приём' });
 
-    await app.user.click(within(screen.getByRole('navigation', { name: 'Главное меню' })).getByRole('link', { name: 'Форма записи' }));
-
-    expect(app.location().pathname).toBe('/booking/form');
-    expect(await screen.findByText('Сначала выберите врача, дату и время')).toBeInTheDocument();
+    expect(app.location().navigationType).toBe('REPLACE');
+    expect(screen.queryByRole('heading', { level: 1, name: 'Форма записи' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Сначала выберите врача, дату и время')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Имя пациента')).not.toBeInTheDocument();
   });
 });

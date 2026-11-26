@@ -148,7 +148,7 @@ export function BookingPage() {
 
   let content;
   if (key === null) {
-    content = <p>{t('booking.selectDoctorAndDate')}</p>;
+    content = null;
   } else if (windows === undefined) {
     content = <p>{t('common.loading')}</p>;
   } else if (windows === null) {
@@ -207,7 +207,7 @@ export function BookingPage() {
 
   return (
     <section className="booking">
-      <h1>{t('booking.title')}</h1>
+      <h1 className="booking__title">{t('booking.title')}</h1>
       {flash?.booked && (
         <div className="booking__success" role="status">
           <p>{t('booking.success')}</p>
@@ -219,6 +219,7 @@ export function BookingPage() {
           {t('common.genericError')}
         </p>
       )}
+      {key === null && <p className="booking__hint">{t('booking.selectDoctorAndDate')}</p>}
       <div className="booking__layout">
         <div className="booking__aside">
           <div className="form-field">

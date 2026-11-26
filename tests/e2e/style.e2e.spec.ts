@@ -171,7 +171,6 @@ test.describe('Стилистика', () => {
     const pages: [string, string][] = [
       ['/records', 'Записи'],
       ['/booking', 'Запись на приём'],
-      ['/booking/form', 'Форма записи'],
       ['/doctors', 'Карточки врачей'],
       ['/doctors/new', 'Добавить врача'],
     ];
@@ -180,6 +179,12 @@ test.describe('Стилистика', () => {
       await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible();
       await expectLightWarmPalette(page, path);
     }
+
+    // форма записи открывается только с выбранным слотом
+    await page.goto('/booking');
+    await chooseSlot(page, { doctorName: fullName(DOCTOR5), date: nextWorkingDate(DOCTOR5.workDays, 3) });
+    await expect(page.getByRole('heading', { level: 1, name: 'Форма записи' })).toBeVisible();
+    await expectLightWarmPalette(page, '/booking/form');
 
     // попап (выход): диалог светлый, кнопки в нём светлые
     await header(page).getByRole('button', { name: 'Выйти' }).click();

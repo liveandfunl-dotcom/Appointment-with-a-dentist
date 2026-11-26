@@ -1,3 +1,11 @@
+.booking__title {
+  margin-bottom: 12px;
+}
+
+.booking__hint {
+  margin: 0 0 var(--space-field);
+}
+
 .booking__layout {
   display: flex;
   flex-wrap: wrap;

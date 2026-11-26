@@ -1,7 +1,7 @@
 # HTTP API
 
 Спека — контракт для `backend/src` и для API-тестов `tests/api/*.spec.ts`.
-Источник: план `docs/plans/clinic-mvp.md`. Модель данных — `docs/specs/design/data-model.md`.
+Источник: обзор `docs/impl/clinic-mvp.md`. Модель данных — `docs/specs/design/data-model.md`.
 
 Связанные критерии: AC-AUTH-01…13, AC-USERS-01…11, AC-SLOTS-01…04, AC-APPT-01…11, AC-MAIL-01…02, AC-I18N-02 (ключи бэкенда).
 
