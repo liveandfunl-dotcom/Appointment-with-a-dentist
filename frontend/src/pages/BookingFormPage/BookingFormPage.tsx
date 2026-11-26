@@ -1,9 +1,14 @@
-import { useId, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Navigate, useLocation, useNavigate } from 'react-router';
 
-import { api, ApiError } from '../../api/client';
+import { createAppointment } from '../../api/appointments';
+import { apiErrorKey } from '../../api/errors';
 import { ConfirmDialog } from '../../components/ConfirmDialog/ConfirmDialog';
+import { FormField } from '../../components/FormField/FormField';
+import { TextField } from '../../components/FormField/TextField';
+import { Message } from '../../components/Message/Message';
+import { formatDate } from '../../utils/date';
 import './booking-form.css';
 
 interface Slot {
@@ -26,7 +31,7 @@ function isSlot(value: unknown): value is Slot {
   );
 }
 
-const formatDate = (iso: string) => iso.split('-').reverse().join('.');
+const SERVER_ERRORS = { SLOT_TAKEN: 'bookingForm.slotTaken', SLOT_UNAVAILABLE: 'bookingForm.slotUnavailable' };
 
 export function BookingFormPage() {
   const { t, i18n } = useTranslation();
@@ -34,19 +39,19 @@ export function BookingFormPage() {
   const { state } = useLocation();
   const slot = isSlot(state) ? state : null;
 
-  const id = useId();
   const [patientName, setPatientName] = useState('');
   const [patientPhone, setPatientPhone] = useState('');
   const [comment, setComment] = useState('');
   const [errors, setErrors] = useState({ name: false, phone: false });
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [serverError, setServerError] = useState<string | null>(null);
+  /** i18n-ключ ошибки сервера: переводится при рендере, поэтому следует за сменой языка. */
+  const [serverErrorKey, setServerErrorKey] = useState<string | null>(null);
 
   if (!slot) return <Navigate to="/booking" replace />;
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
-    setServerError(null);
+    setServerErrorKey(null);
     const next = { name: patientName.trim() === '', phone: patientPhone.trim() === '' };
     setErrors(next);
     if (!next.name && !next.phone) setConfirmOpen(true);
@@ -54,7 +59,7 @@ export function BookingFormPage() {
 
   const onConfirm = async () => {
     try {
-      const created = await api.post<{ mailSent: boolean }>('/api/appointments', {
+      const created = await createAppointment({
         doctorId: slot.doctorId,
         date: slot.date,
         start: slot.start,
@@ -66,92 +71,38 @@ export function BookingFormPage() {
       });
       navigate('/booking', { state: { booked: true, mailSent: created.mailSent } });
     } catch (e) {
-      const code = e instanceof ApiError ? e.code : '';
-      setServerError(
-        code === 'SLOT_TAKEN'
-          ? t('bookingForm.slotTaken')
-          : code === 'SLOT_UNAVAILABLE'
-            ? t('bookingForm.slotUnavailable')
-            : code === 'TOO_MANY_REQUESTS'
-              ? t('common.tooManyRequests')
-              : t('common.genericError'),
-      );
+      setServerErrorKey(apiErrorKey(e, SERVER_ERRORS));
       setConfirmOpen(false);
     }
   };
 
-  const nameErrorId = `${id}-name-error`;
-  const phoneErrorId = `${id}-phone-error`;
+  const required = t('common.requiredField');
 
   return (
     <section className="booking-form">
       <h1>{t('bookingForm.title')}</h1>
       <form className="booking-form__form" noValidate onSubmit={onSubmit}>
-        <div className="form-field">
-          <label className="form-field__label" htmlFor={`${id}-doctor`}>
-            {t('bookingForm.doctor')}
-          </label>
-          <input id={`${id}-doctor`} type="text" readOnly value={slot.doctorName} />
-        </div>
-        <div className="form-field">
-          <label className="form-field__label" htmlFor={`${id}-date`}>
-            {t('bookingForm.date')}
-          </label>
-          <input id={`${id}-date`} type="text" readOnly value={formatDate(slot.date)} />
-        </div>
-        <div className="form-field">
-          <label className="form-field__label" htmlFor={`${id}-time`}>
-            {t('bookingForm.time')}
-          </label>
-          <input id={`${id}-time`} type="text" readOnly value={`${slot.start}–${slot.end}`} />
-        </div>
-        <div className="form-field">
-          <label className="form-field__label" htmlFor={`${id}-name`}>
-            {t('bookingForm.patientName')}
-          </label>
-          <input
-            id={`${id}-name`}
-            type="text"
-            value={patientName}
-            aria-invalid={errors.name ? true : undefined}
-            aria-describedby={errors.name ? nameErrorId : undefined}
-            onChange={(e) => setPatientName(e.target.value)}
-          />
-          {errors.name && (
-            <p className="form-field__error" id={nameErrorId} role="alert">
-              {t('common.requiredField')}
-            </p>
-          )}
-        </div>
-        <div className="form-field">
-          <label className="form-field__label" htmlFor={`${id}-phone`}>
-            {t('bookingForm.patientPhone')}
-          </label>
-          <input
-            id={`${id}-phone`}
-            type="tel"
-            value={patientPhone}
-            aria-invalid={errors.phone ? true : undefined}
-            aria-describedby={errors.phone ? phoneErrorId : undefined}
-            onChange={(e) => setPatientPhone(e.target.value)}
-          />
-          {errors.phone && (
-            <p className="form-field__error" id={phoneErrorId} role="alert">
-              {t('common.requiredField')}
-            </p>
-          )}
-        </div>
-        <div className="form-field">
-          <label className="form-field__label" htmlFor={`${id}-comment`}>
-            {t('bookingForm.comment')}
-          </label>
-          <textarea id={`${id}-comment`} rows={3} value={comment} onChange={(e) => setComment(e.target.value)} />
-        </div>
-        {serverError && (
-          <p className="form-field__error" role="alert">
-            {serverError}
-          </p>
-        )}
+        <TextField label={t('bookingForm.doctor')} type="text" readOnly value={slot.doctorName} />
+        <TextField label={t('bookingForm.date')} type="text" readOnly value={formatDate(slot.date)} />
+        <TextField label={t('bookingForm.time')} type="text" readOnly value={`${slot.start}–${slot.end}`} />
+        <TextField
+          label={t('bookingForm.patientName')}
+          type="text"
+          value={patientName}
+          error={errors.name ? required : null}
+          onChange={(e) => setPatientName(e.target.value)}
+        />
+        <TextField
+          label={t('bookingForm.patientPhone')}
+          type="tel"
+          value={patientPhone}
+          error={errors.phone ? required : null}
+          onChange={(e) => setPatientPhone(e.target.value)}
+        />
+        <FormField label={t('bookingForm.comment')}>
+          {(control) => <textarea {...control} rows={3} value={comment} onChange={(e) => setComment(e.target.value)} />}
+        </FormField>
+        {serverErrorKey && <Message variant="error">{t(serverErrorKey)}</Message>}
         <div className="booking-form__actions">
           <button type="submit" className="button button--primary">
             {t('bookingForm.submit')}

@@ -1,8 +1,9 @@
 import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import type { UserCard, UserDetails } from '@clinic/shared';
 import type { AuthUser } from '../auth/auth-user';
 import { CurrentUser, Roles } from '../auth/auth.decorators';
-import { bodyOf } from '../common/validation';
-import { parseId, UserCard, UserDetails, UsersService } from './users.service';
+import { bodyOf, parseId } from '../common/validation';
+import { UsersService } from './users.service';
 
 @Controller('users')
 export class UsersController {

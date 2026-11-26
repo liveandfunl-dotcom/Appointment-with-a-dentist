@@ -8,6 +8,7 @@
     "test:e2e": "playwright test -c playwright.config.ts"
   },
   "devDependencies": {
+    "@clinic/shared": "*",
     "@playwright/test": "^1.65.1",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^8.0.0",

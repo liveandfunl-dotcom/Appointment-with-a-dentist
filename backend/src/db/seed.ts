@@ -1,5 +1,8 @@
 import { DatabaseSync } from 'node:sqlite';
+import type { Role } from '../auth/auth-user';
 import { hashPassword } from '../auth/password';
+import { toUnixSec } from '../common/time';
+import { insertUser } from '../users/insert-user';
 
 /** Данные пользователя для сида (data-model.md, раздел 4). */
 interface SeedUser {
@@ -8,7 +11,7 @@ interface SeedUser {
   password: string;
   surname: string;
   name: string;
-  role: 'root' | 'admin' | 'doctor';
+  role: Role;
   phone: string | null;
   specialization?: string;
   room?: number;
@@ -64,34 +67,27 @@ const DEV_USERS: SeedUser[] = [
 async function seedUser(db: DatabaseSync, user: SeedUser, nowSec: number): Promise<void> {
   const exists = db.prepare('SELECT 1 FROM Users WHERE email = ?').get(user.email);
   if (exists) return;
-  const pass = await hashPassword(user.password);
-  db.prepare(
-    `INSERT INTO Users (name, surname, isAdmin, isDoctor, isRoot, login, pass, room, email,
-       specialization, phone, workDays, workStart, workEnd, createDate)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-  ).run(
-    user.name,
-    user.surname,
-    user.role === 'admin' ? 1 : 0,
-    user.role === 'doctor' ? 1 : 0,
-    user.role === 'root' ? 1 : 0,
-    user.login,
-    pass,
-    user.room ?? null,
-    user.email,
-    user.specialization ?? null,
-    user.phone,
-    user.workDays ?? null,
-    user.workStart ?? null,
-    user.workEnd ?? null,
-    nowSec,
-  );
+  insertUser(db, {
+    name: user.name,
+    surname: user.surname,
+    role: user.role,
+    login: user.login,
+    pass: await hashPassword(user.password),
+    room: user.room ?? null,
+    email: user.email,
+    specialization: user.specialization ?? null,
+    phone: user.phone,
+    workDays: user.workDays ?? null,
+    workStart: user.workStart ?? null,
+    workEnd: user.workEnd ?? null,
+    createDate: nowSec,
+  });
 }
 
 /** Сиды (data-model.md, раздел 4): root всегда, dev-пользователи при seedDev. Идемпотентно по email. */
 export async function runSeeds(db: DatabaseSync, now: () => Date, seedDev: boolean): Promise<void> {
   const users = seedDev ? [ROOT, ...DEV_USERS] : [ROOT];
   for (const user of users) {
-    await seedUser(db, user, Math.floor(now().getTime() / 1000));
+    await seedUser(db, user, toUnixSec(now()));
   }
 }

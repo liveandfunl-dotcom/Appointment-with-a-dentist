@@ -1,0 +1,7 @@
+{
+  "name": "@clinic/shared",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Общие типы backend и frontend (только типы, рантайм-кода нет)",
+  "types": "index.d.ts"
+}

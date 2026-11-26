@@ -1,11 +1,12 @@
+import type { Lang } from '@clinic/shared';
 import { createInstance, type i18n } from 'i18next';
 
 import el from './el.json';
 import en from './en.json';
 import ru from './ru.json';
 
-export const LANGS = ['ru', 'en', 'el'] as const;
-export type Lang = (typeof LANGS)[number];
+export const LANGS = ['ru', 'en', 'el'] as const satisfies readonly Lang[];
+export type { Lang };
 export const LANG_STORAGE_KEY = 'lang';
 
 function isLang(value: unknown): value is Lang {
@@ -28,7 +29,7 @@ export async function createI18n(lang?: Lang): Promise<i18n> {
     lng: lang ?? storedLang() ?? 'ru',
     fallbackLng: 'ru',
     supportedLngs: [...LANGS],
-    resources: { ru: { translation: ru }, en: { translation: en }, el: { translation: el } },
+    resources: { ru: { translation: ru }, en: { translation: en }, el: { translation: el } } satisfies Record<Lang, unknown>,
     interpolation: { escapeValue: false },
     initAsync: false,
   });

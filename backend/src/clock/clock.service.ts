@@ -1,9 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { APP_OPTIONS, AppOptions } from '../app.options';
+import { APP_OPTIONS, ResolvedAppOptions } from '../app.options';
+import { toUnixSec } from '../common/time';
 
 @Injectable()
 export class Clock {
-  constructor(@Inject(APP_OPTIONS) private readonly options: AppOptions) {}
+  constructor(@Inject(APP_OPTIONS) private readonly options: ResolvedAppOptions) {}
 
   now(): Date {
     return this.options.now ? this.options.now() : new Date();
@@ -11,6 +12,6 @@ export class Clock {
 
   /** Текущее время в unix-секундах (формат хранения в БД). */
   nowSec(): number {
-    return Math.floor(this.now().getTime() / 1000);
+    return toUnixSec(this.now());
   }
 }

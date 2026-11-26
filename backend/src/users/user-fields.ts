@@ -1,5 +1,6 @@
-import { parseEmail } from '../common/validation';
 import { parseTime } from '../common/time';
+import { boundedText, parseEmail } from '../common/validation';
+import { serializeWorkDays } from './work-days';
 
 /** Значение поля в формате колонки Users. Парсер возвращает null, если значение невалидно. */
 export type ColumnValue = string | number;
@@ -9,11 +10,7 @@ const LOGIN_RE = /^[A-Za-z0-9._-]+$/;
 const PASSWORD_MIN = 8;
 
 function text(max: number): Parser {
-  return (value) => {
-    if (typeof value !== 'string') return null;
-    const s = value.trim();
-    return s.length >= 1 && s.length <= max ? s : null;
-  };
+  return (value) => boundedText(value, max);
 }
 
 function room(value: unknown): number | null {
@@ -25,7 +22,7 @@ function workDays(value: unknown): string | null {
   if (!Array.isArray(value) || value.length === 0) return null;
   const ok = value.every((d) => typeof d === 'number' && Number.isInteger(d) && d >= 1 && d <= 7);
   if (!ok || new Set(value).size !== value.length) return null;
-  return [...(value as number[])].sort((a, b) => a - b).join(',');
+  return serializeWorkDays(value as number[]);
 }
 
 /** Поля, общие для врача и администратора (api.md, 4.9). */

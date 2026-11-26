@@ -6,7 +6,7 @@
 
 ## Цель
 
-SPA для записи пациентов на приём к врачу в небольшой клинике. Внутренняя система без доступа в интернет: пациенты в ней не работают, записывают их врачи и администраторы. Стек: React 19 + Vite (только CSR), NestJS, SQLite из `node:sqlite` (Node 24), Jest, Playwright, Docker. Монорепо на npm workspaces (`backend`, `frontend`, `tests`).
+SPA для записи пациентов на приём к врачу в небольшой клинике. Внутренняя система без доступа в интернет: пациенты в ней не работают, записывают их врачи и администраторы. Стек: React 19 + Vite (только CSR), NestJS, SQLite из `node:sqlite` (Node 24), Jest, Playwright, Docker. Монорепо на npm workspaces (`backend`, `frontend`, `tests`, `shared` — общие типы).
 
 ## Границы
 
@@ -47,8 +47,8 @@ SPA для записи пациентов на приём к врачу в не
 
 ## Архитектура кратко
 
-- **Backend** (`backend/src`): модули `db` (миграции, сиды), `clock` (подменяемое время), `auth`, `users`, `appointments`, `mail`, `common`, `i18n`. `createApp(options)` в `app.factory.ts` — единая точка сборки приложения для `main.ts` и API-тестов (опции: `dbPath`, `now`, `mail: 'smtp' | 'memory' | 'failing'`, `seedDev`, `appUrl`, `timezone`, `staticDir`). Все пути API начинаются с `/api`, ошибки приходят как `{ code, fields? }`. Время в часовом поясе считается через `luxon`. В Docker backend раздаёт и статику frontend.
-- **Frontend** (`frontend/src`): React Router, `AuthContext`, `api/client.ts`, i18n на `react-i18next`, компоненты `Header`, `LanguageSelect`, `ConfirmDialog`, `DatePicker`, страницы `RecordsPage`, `BookingPage`, `BookingFormPage`, `DoctorsPage`, `DoctorFormPage`, `LoginPage`, `MagicLinkPage`. Стили — обычный CSS по БЭМ.
+- **Backend** (`backend/src`): модули `db` (миграции, сиды), `clock` (подменяемое время), `auth`, `users`, `appointments`, `mail`, `common`, `i18n`. `createApp(options)` в `app.factory.ts` — единая точка сборки приложения для `main.ts` и API-тестов (опции: `dbPath`, `now`, `mail: 'smtp' | 'memory' | 'failing'`, `smtp`, `seedDev`, `appUrl`, `timezone`, `staticDir`; значения по умолчанию подставляет `resolveOptions`). Все пути API начинаются с `/api`, ошибки приходят как `{ code, fields? }`. Время в часовом поясе считается через `luxon`. В Docker backend раздаёт и статику frontend.
+- **Frontend** (`frontend/src`): React Router, `AuthContext`, слой `api/` (клиент, типы, функции по ресурсам), хук `useAsync`, i18n на `react-i18next`, компоненты `Header`, `LanguageSelect`, `ConfirmDialog`, `DatePicker`, `FormField`, `Message`, страницы `RecordsPage`, `BookingPage`, `BookingFormPage`, `DoctorsPage`, `DoctorFormPage`, `LoginPage`, `MagicLinkPage`. Стили — обычный CSS по БЭМ.
 - **БД**: таблицы `Users`, `Appointments`, `MagicLinks`, `Sessions`, `schema_migrations`; одна миграция `1 initial` (см. [users.md](users.md) и [data-model.md](../specs/design/data-model.md)).
 - **Развёртывание**: один образ, `docker-compose` с `app` и `mailpit`, БД в volume (см. [deploy.md](deploy.md)).
 
@@ -61,6 +61,9 @@ SPA для записи пациентов на приём к врачу в не
 | [appointments.md](appointments.md) | свободные окна, запись, отмена, письма, страницы записи |
 | [ui-shell.md](ui-shell.md) | шапка, меню, i18n, DatePicker, стили и БЭМ |
 | [deploy.md](deploy.md) | Docker, compose, smoke, раздача статики |
+| [clinic-timezone.md](clinic-timezone.md) | «сегодня» во frontend по поясу клиники, `GET /api/clinic` |
+| [review-leftovers.md](review-leftovers.md) | разбор входа в `*-fields.ts` / `*-input.ts`, cookie через `res.cookie()`, пакет `shared/` с типами |
+| [code-quality.md](code-quality.md) | рефакторинг по код-ревью: общие модули, Strategy для почты, `useAsync`, `FormField` |
 
 ## Подзадачи (история выполнения)
 
@@ -122,6 +125,5 @@ SPA для записи пациентов на приём к врачу в не
 - **Просроченный magic link в e2e не проверяется**: истечение 30 минут в e2e не воспроизвести; сценарий покрыт API-тестом AC-AUTH-04 и unit-тестами frontend (AC-UI-LOGIN-05).
 - **Контейнер работает под uid 1000** (пользователь `node`): папка с БД на хосте должна быть доступна ему на запись.
 - Rate limit входа хранится в памяти процесса (при перезапуске сбрасывается) и считает по `req.ip` без `trust proxy`.
-- Календарь «Записи на приём» определяет «сегодня» и день недели по часам браузера, а не по `CLINIC_TZ`; сервер проверяет слот в поясе клиники.
 - Миграция одна (`1 initial`); любые изменения схемы — только новыми миграциями.
 - Dev-пользователи (`SEED_DEV=true`) и стандартный root — учебные данные, в рабочей среде их не использовать.

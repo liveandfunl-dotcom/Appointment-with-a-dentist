@@ -1,9 +1,10 @@
 import { Body, Controller, Get, HttpCode, Param, Post, Query } from '@nestjs/common';
+import type { Appointment } from '@clinic/shared';
 import type { AuthUser } from '../auth/auth-user';
 import { Auth, CurrentUser } from '../auth/auth.decorators';
-import { bodyOf } from '../common/validation';
-import { parseId } from '../users/users.service';
-import { Appointment, AppointmentsService } from './appointments.service';
+import { bodyOf, parseId } from '../common/validation';
+import { parseAppointmentsQuery, parseNewAppointment } from './appointment-fields';
+import { AppointmentsService } from './appointments.service';
 
 @Controller('appointments')
 @Auth()
@@ -13,13 +14,13 @@ export class AppointmentsController {
   /** api.md 4.12. */
   @Get()
   list(@CurrentUser() viewer: AuthUser, @Query() query: Record<string, unknown>): Appointment[] {
-    return this.appointments.list(viewer, query);
+    return this.appointments.list(viewer, parseAppointmentsQuery(query));
   }
 
   /** api.md 4.13. */
   @Post()
   create(@CurrentUser() viewer: AuthUser, @Body() body: unknown): Promise<Appointment & { mailSent: boolean }> {
-    return this.appointments.create(viewer, bodyOf(body));
+    return this.appointments.create(viewer, parseNewAppointment(bodyOf(body)));
   }
 
   /** api.md 4.14. */

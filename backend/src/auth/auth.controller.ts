@@ -1,16 +1,21 @@
 import { Body, Controller, Get, HttpCode, Post, Req, Res } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { bodyOf, nonEmptyString, parseEmail, parseLang, assertValid } from '../common/validation';
+import { bodyOf } from '../common/validation';
 import type { AuthUser } from './auth-user';
+import { parseLoginRequest, parseMagicLinkRequest, parseVerifyRequest } from './auth-fields';
 import { Auth, CurrentUser } from './auth.decorators';
 import { AuthService, SESSION_COOKIE, SESSION_TTL_SEC } from './auth.service';
 import { RateLimiter } from './rate-limiter';
 
-const COOKIE_ATTRS = 'Path=/; HttpOnly; SameSite=Lax';
+/** Атрибуты cookie сессии (api.md, 4.3, 4.5). */
+const SESSION_COOKIE_OPTIONS = { httpOnly: true, sameSite: 'lax', path: '/' } as const;
 
-function setSessionCookie(res: Response, token: string): void {
-  res.append('Set-Cookie', `${SESSION_COOKIE}=${token}; Max-Age=${SESSION_TTL_SEC}; ${COOKIE_ATTRS}`);
-}
+const setSessionCookie = (res: Response, token: string): void => {
+  res.cookie(SESSION_COOKIE, token, { ...SESSION_COOKIE_OPTIONS, maxAge: SESSION_TTL_SEC * 1000 });
+};
+const clearSessionCookie = (res: Response): void => {
+  res.cookie(SESSION_COOKIE, '', { ...SESSION_COOKIE_OPTIONS, maxAge: 0 });
+};
 
 @Controller('auth')
 export class AuthController {
@@ -27,14 +32,9 @@ export class AuthController {
     const identifier = typeof body.email === 'string' ? body.email.trim().toLowerCase() : undefined;
     this.limiter.consume('magic-link', req.ip ?? '', identifier);
 
-    const email = parseEmail(body.email);
-    const lang = parseLang(body.lang);
-    const invalid: string[] = [];
-    if (!email) invalid.push('email');
-    if (!lang) invalid.push('lang');
-    assertValid(invalid);
+    const { email, lang } = parseMagicLinkRequest(body);
 
-    await this.auth.requestMagicLink(email!, lang!);
+    await this.auth.requestMagicLink(email, lang);
     return { ok: true };
   }
 
@@ -42,9 +42,8 @@ export class AuthController {
   @Post('magic-link/verify')
   @HttpCode(200)
   verify(@Body() rawBody: unknown, @Res({ passthrough: true }) res: Response): { user: AuthUser } {
-    const { token } = bodyOf(rawBody);
-    if (typeof token !== 'string') assertValid(['token']);
-    const { user, sessionToken } = this.auth.verifyMagicLink(token as string);
+    const { token } = parseVerifyRequest(bodyOf(rawBody));
+    const { user, sessionToken } = this.auth.verifyMagicLink(token);
     setSessionCookie(res, sessionToken);
     return { user };
   }
@@ -61,14 +60,9 @@ export class AuthController {
     const identifier = typeof body.login === 'string' ? body.login.trim() : undefined;
     this.limiter.consume('login', req.ip ?? '', identifier);
 
-    const login = nonEmptyString(body.login);
-    const password = nonEmptyString(body.password, false);
-    const invalid: string[] = [];
-    if (!login) invalid.push('login');
-    if (!password) invalid.push('password');
-    assertValid(invalid);
+    const { login, password } = parseLoginRequest(body);
 
-    const { user, sessionToken } = await this.auth.login(login!, password!);
+    const { user, sessionToken } = await this.auth.login(login, password);
     setSessionCookie(res, sessionToken);
     return { user };
   }
@@ -79,7 +73,7 @@ export class AuthController {
   logout(@Req() req: Request, @Res({ passthrough: true }) res: Response): { ok: true } {
     const token: unknown = req.cookies?.[SESSION_COOKIE];
     if (typeof token === 'string' && token) this.auth.deleteSession(token);
-    res.append('Set-Cookie', `${SESSION_COOKIE}=; Max-Age=0; ${COOKIE_ATTRS}`);
+    clearSessionCookie(res);
     return { ok: true };
   }
 

@@ -173,6 +173,8 @@ export async function renderApp(
   activeSession = session;
 
   const defaults: ApiRoutes = {
+    // Пояс клиники по умолчанию совпадает с поясом процесса: «сегодня» во frontend остаётся локальным.
+    'GET /api/clinic': () => ok({ timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }),
     'GET /api/auth/me': () => (sessionUser ? ok(sessionUser) : fail(401, 'UNAUTHORIZED')),
     'POST /api/auth/logout': () => {
       sessionUser = null;

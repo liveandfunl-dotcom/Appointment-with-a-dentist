@@ -10,7 +10,7 @@
 - SPA, только CSR, React Router. Все запросы — через `frontend/src/api/client.ts` (`fetch`, `credentials: 'include'`). Ошибка API превращается в `ApiError { status, code, fields }` (формат ошибки — api.md, 1.1).
 - **AuthContext.** При старте приложения выполняется `GET /api/auth/me`: 200 → пользователь `{ id, surname, name, role }`, 401 → гость. Пока ответа нет, закрытые маршруты показывают `common.loading` и не делают редирект.
 - Роль `role`: `guest` (не вошёл), `doctor`, `admin`, `root`.
-- **Даты** в интерфейсе — `DD.MM.YYYY`, время — `HH:mm`, интервал — `09:00–10:30` (en dash `–`). «Сегодня» на фронтенде — локальная дата браузера (компьютеры клиники в её часовом поясе).
+- **Даты** в интерфейсе — `DD.MM.YYYY`, время — `HH:mm`, интервал — `09:00–10:30` (en dash `–`). «Сегодня» на фронтенде — дата в часовом поясе клиники (`GET /api/clinic`, api.md 4.16); пока пояс не получен или запрос не удался — локальная дата браузера.
 - **Ошибки без своего текста** (500, сеть, неизвестный `code`) → `common.genericError`. `TOO_MANY_REQUESTS` → `common.tooManyRequests`.
 
 ### 1.1. Доступность и селекторы для тестов
@@ -94,15 +94,16 @@ interface DatePickerProps {
   value: string | null;                       // 'YYYY-MM-DD'
   onChange: (date: string) => void;
   isDateDisabled?: (date: string) => boolean; // true — день недоступен
+  today?: string;                             // 'YYYY-MM-DD'; по умолчанию — дата по часам браузера (AC-TZ-03)
 }
 ```
 
-- Начальный месяц — месяц `value`, иначе текущий.
+- Начальный месяц — месяц `value`, иначе месяц `today`.
 - Шапка: кнопка «‹» (`aria-label` = `datePicker.prevMonth`), заголовок `{months.N} {YYYY}` (например «Ноябрь 2026»), кнопка «›» (`aria-label` = `datePicker.nextMonth`). Кнопки листают месяцы без ограничений, в том числе через границу года.
 - Строка дней недели — `weekdays.1` … `weekdays.7`, неделя начинается с понедельника.
 - Сетка: 7 колонок; ячейки до первого числа и после последнего — пустые (не кнопки). Каждый день месяца — `<button type="button" aria-label="YYYY-MM-DD">D</button>`.
 - Недоступный день (`isDateDisabled(date) === true`): атрибуты `disabled` и `aria-disabled="true"`, клик не вызывает `onChange`.
-- Выбранный день — `aria-pressed="true"` и модификатор `date-picker__day--selected`; сегодня — `date-picker__day--today`.
+- Выбранный день — `aria-pressed="true"` и модификатор `date-picker__day--selected`; сегодня (`today`) — `date-picker__day--today`.
 - Названия месяцев и дней берутся из i18n и меняются при смене языка.
 
 ## 5. Страницы

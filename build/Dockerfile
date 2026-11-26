@@ -8,9 +8,11 @@ COPY package.json package-lock.json ./
 COPY backend/package.json backend/
 COPY frontend/package.json frontend/
 COPY tests/package.json tests/
+COPY shared/package.json shared/
 RUN npm ci --workspace backend --workspace frontend --include-workspace-root
 COPY backend backend
 COPY frontend frontend
+COPY shared shared
 RUN npm run build
 
 # ---- 2. Production-зависимости backend ----
@@ -20,6 +22,7 @@ COPY package.json package-lock.json ./
 COPY backend/package.json backend/
 COPY frontend/package.json frontend/
 COPY tests/package.json tests/
+COPY shared/package.json shared/
 RUN npm ci --omit=dev --workspace backend
 
 # ---- 3. Финальный образ ----

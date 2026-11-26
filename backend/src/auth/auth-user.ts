@@ -1,12 +1,6 @@
-export type Role = 'root' | 'admin' | 'doctor';
+import type { AuthUser, Role } from '@clinic/shared';
 
-/** Пользователь в ответах auth и в `@CurrentUser()` (api.md, 2.1). */
-export interface AuthUser {
-  id: number;
-  surname: string;
-  name: string;
-  role: Role;
-}
+export type { AuthUser, Role };
 
 interface RoleFlags {
   isRoot: number | bigint;

@@ -1,7 +1,9 @@
 import { DatabaseSync } from 'node:sqlite';
+import { toUnixSec } from '../common/time';
 import { Migration } from './migrations';
+import { inTransaction } from './transaction';
 
-/** Применяет ещё не применённые миграции по возрастанию version (data-model.md, раздел 3). */
+/** Применяет ещё не применённые миграции по возрастанию version, каждую в своей транзакции (data-model.md, раздел 3). */
 export function runMigrations(db: DatabaseSync, migrations: Migration[], now: () => Date): void {
   db.exec(`CREATE TABLE IF NOT EXISTS schema_migrations (
     version   INTEGER PRIMARY KEY,
@@ -19,14 +21,9 @@ export function runMigrations(db: DatabaseSync, migrations: Migration[], now: ()
   const insert = db.prepare('INSERT INTO schema_migrations (version, name, appliedAt) VALUES (?, ?, ?)');
 
   for (const m of pending) {
-    db.exec('BEGIN IMMEDIATE');
-    try {
+    inTransaction(db, () => {
       db.exec(m.up);
-      insert.run(m.version, m.name, Math.floor(now().getTime() / 1000));
-      db.exec('COMMIT');
-    } catch (err) {
-      db.exec('ROLLBACK');
-      throw err;
-    }
+      insert.run(m.version, m.name, toUnixSec(now()));
+    });
   }
 }

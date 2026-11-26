@@ -16,6 +16,7 @@
 |-------|------------|
 | `frontend/` | клиентское приложение (React + Vite) |
 | `backend/` | серверное приложение (NestJS) |
+| `shared/` | общие типы backend и frontend (только `.d.ts`, без рантайм-кода) |
 | `tests/` | тесты |
 | `build/` | сборка и развёртывание (Docker) |
 | `docs/` | документация (см. ниже) |
@@ -40,6 +41,9 @@
 | `AGENTS.md` | стек, структура, правила документации и порядок разработки |
 | `docs/impl/README.md` | индекс реализованных фич |
 | `docs/impl/clinic-mvp.md` | обзор MVP: решения, история задач, запуск проверок, известные ограничения |
+| `docs/impl/clinic-timezone.md` | как frontend получает пояс клиники и считает «сегодня» (`GET /api/clinic`, `useToday`) |
+| `docs/impl/review-leftovers.md` | где живут общие типы (`shared/`), разбор входа и порядок проверок в сервисах |
+| `docs/impl/code-quality.md` | структура кода после рефакторинга: общие модули backend и frontend, правила размещения логики |
 | `docs/specs/` | спецификации (design / ui / system) |
 | `docs/specs/design/data-model.md` | модель данных, миграции, сиды |
 | `docs/specs/system/api.md` | контракт HTTP API, коды ошибок, переменные окружения |

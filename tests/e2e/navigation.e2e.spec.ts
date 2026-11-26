@@ -157,7 +157,7 @@ test.describe('Языки', () => {
     await expect(header(page).getByRole('button', { name: 'Sign out' })).toBeVisible();
 
     await header(page).getByRole('combobox', { name: 'Language' }).selectOption('el');
-    expect(await menuItems(page)).toEqual(['Ραντεβού', 'Κλείσιμο ραντεβού', 'Κάρτες γιατρών', 'Φόρμα ραντεβού', 'Προσθήκη γιατρού']);
+    expect(await menuItems(page)).toEqual(['Ραντεβού', 'Κλείσιμο ραντεβού', 'Κάρτες γιατρών', 'Προσθήκη γιατρού']);
     await expect(header(page).getByRole('button', { name: 'Αποσύνδεση' })).toBeVisible();
 
     await page.goto('/booking');
