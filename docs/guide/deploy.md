@@ -36,6 +36,7 @@ docker compose -f build/docker-compose.yml up -d --build
 | `SEED_DEV` | не задан | `true` — создать тестового администратора и 5 врачей |
 | `SMTP_HOST` | `localhost` (в compose `mailpit`) | SMTP-сервер |
 | `SMTP_PORT` | `1025` | порт SMTP |
+| `SMTP_SECURE` | `false` | `true` — TLS с первого байта (порт 465); для 587/STARTTLS не задавайте |
 | `SMTP_USER` / `SMTP_PASS` | пусто | авторизация SMTP; пусто — без неё |
 | `SMTP_FROM` | `Clinic <noreply@clinic.local>` | адрес отправителя |
 | `APP_PORT` | `3000` | только compose: порт приложения на хосте |
